@@ -1,0 +1,13 @@
+name,id
+City,CITY
+Climate Division,CLIM_DIV
+Climate Region,CLIM_REG
+Country,CNTRY
+County,CNTY
+Hydrologic Accounting Unit,HYD_ACC
+Hydrologic Cataloging Unit,HYD_CAT
+Hydrologic Region,HYD_REG
+Hydrologic Subregion,HYD_SUB
+State,ST
+US Territory,US_TERR
+Zip Code,ZIP

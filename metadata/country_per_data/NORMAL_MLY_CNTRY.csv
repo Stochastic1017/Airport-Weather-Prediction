@@ -1,0 +1,7 @@
+mindate,maxdate,name,datacoverage,id
+2010-01-01,2010-12-01,Canada,1,FIPS:CA
+2010-01-01,2010-12-01,Jarvis I.,1,FIPS:DQ
+2010-01-01,2010-12-01,Micronesia,1,FIPS:FM
+2010-01-01,2010-12-01,Palau,1,FIPS:PS
+2010-01-01,2010-12-01,Marshall Is.,1,FIPS:RM
+2010-01-01,2010-12-01,United States,1,FIPS:US

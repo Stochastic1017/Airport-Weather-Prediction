@@ -1,0 +1,4 @@
+mindate,maxdate,name,datacoverage,id
+2010-01-01,2010-12-31,Micronesia,0.7917,FIPS:FM
+2010-01-01,2010-12-31,Palau,0.7917,FIPS:PS
+2010-01-01,2010-12-31,United States,1.0,FIPS:US
