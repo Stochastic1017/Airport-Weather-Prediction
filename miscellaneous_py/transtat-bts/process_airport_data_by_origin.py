@@ -12,7 +12,7 @@ It performs the following tasks:
 4. Saves each unique 'OriginAirportID' dataset as a separate CSV in a specified output directory.
 
 Usage:
-    python3 script_name.py {input_dir} {output_dir}
+    python3 process_airport_data_by_origin.py {input_dir} {output_dir}
 """
 
 # Define columns to drop as specified
