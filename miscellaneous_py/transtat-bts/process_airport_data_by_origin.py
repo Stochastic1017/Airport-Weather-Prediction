@@ -6,6 +6,7 @@ import argparse
 """
 This script processes raw airport data CSV files located in a specified input directory.
 It performs the following tasks:
+
 1. Loads each CSV file and removes specified redundant columns.
 2. Splits the data by 'OriginAirportID' and stores each subset in a dictionary.
 3. Merges data for each unique 'OriginAirportID' across all files.
@@ -13,6 +14,11 @@ It performs the following tasks:
 
 Usage:
     python3 process_airport_data_by_origin.py {input_dir} {output_dir}
+
+- input_dir: directory where raw files downloaded from https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGK&QO_fu146_anzr=b0-gvzr 
+             are stored.
+
+- output_dir: directory where processed, cleaned, and splitted data should be stored.
 """
 
 # Define columns to drop as specified
@@ -39,11 +45,11 @@ columns_to_drop = [
     
     # Redundant Departure Time Info columns
     "DepDelay", "DepDelayMinutes", "DepartureDelayGroups",
-    "DepTimeBlk", "DepDel15",
+    "DepTimeBlk", "DepDel15", "WheelsOn",
     
     # Redundant Arrival Time Info columns
     "ArrDelay", "ArrDelayMinutes", "ArrivalDelayGroups",
-    "ArrTimeBlk", "ArrDel15",
+    "ArrTimeBlk", "ArrDel15", "WheelsOff",
     
     # Redundant Cancellation Info columns
     "Diverted", "CancellationCode", "Duplicate", "AirTime", "Flights", "DistanceGroup",
