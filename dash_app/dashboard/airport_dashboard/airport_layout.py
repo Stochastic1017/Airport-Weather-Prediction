@@ -16,9 +16,9 @@ from google.oauth2 import service_account
 load_dotenv()
 
 with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
-    credentials = service_account.Credentials.from_service_account_info(
-            json.loads("/etc/secrets/GCP_CREDENTIALS"))
-
+    credentials_info = json.loads(f.read())  # Read and parse the file contents
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+    
 # Load airport metadata
 airport_metdata = f"gs://airport-weather-data/airports-list-us.csv"
 df_airport = pd.read_csv(airport_metdata, storage_options={"token": credentials})

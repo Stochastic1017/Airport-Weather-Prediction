@@ -21,8 +21,8 @@ import warnings
 warnings.simplefilter("ignore", category=FutureWarning)
 
 with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
-    credentials = service_account.Credentials.from_service_account_info(
-            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+    credentials_info = json.loads(f.read())  # Read and parse the file contents
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
