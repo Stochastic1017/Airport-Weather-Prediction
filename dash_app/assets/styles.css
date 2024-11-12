@@ -20,6 +20,7 @@
   box-sizing: border-box;
 }
 
+/* Global Body Styling */
 body {
   background-color: var(--background-color);
   color: var(--text-primary);
@@ -27,7 +28,7 @@ body {
   line-height: 1.6;
 }
 
-/* Container Styles */
+/* Container Styling */
 .dashboard-container {
   display: flex;
   gap: 20px;
@@ -38,7 +39,7 @@ body {
 .page-header {
   background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
   background-clip: text;
-  -webkit-background-clip: text; /* Vendor prefix for WebKit browsers */
+  -webkit-background-clip: text;
   color: transparent;
 }
 
@@ -74,7 +75,8 @@ body {
 }
 
 /* Map and Plot Containers */
-.map-container, .timeseries-container {
+.map-container,
+.timeseries-container {
   background: var(--panel-background);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
@@ -147,25 +149,85 @@ body {
 }
 
 /* Button Styling */
-.update-plot-button {
+.button,
+.update-plot-button,
+.predict-button {
+  display: inline-block;
   width: 100%;
-  padding: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
+  padding: 15px;
+  font-size: 1rem;
+  font-weight: bold;
   color: white;
+  text-align: center;
   background-color: var(--primary-color);
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
+  box-shadow: var(--shadow-md);
   transition: var(--transition);
+  outline: none;
 }
 
-.update-plot-button:hover {
+.update-plot-button {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.button:hover,
+.update-plot-button:hover,
+.predict-button:hover {
   background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
-.update-plot-button:active {
+.button:active,
+.update-plot-button:active,
+.predict-button:active {
   background-color: var(--primary-active);
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.predict-button {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  border-radius: 12px;
+}
+
+.predict-button:hover {
+  background: linear-gradient(135deg, var(--primary-hover), var(--primary-active));
+  transform: scale(1.02);
+}
+
+.predict-button:active {
+  transform: scale(0.98);
+}
+
+.button:disabled {
+  background-color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.button::after {
+  content: "";
+  display: block;
+  position: absolute;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  transform: scale(0);
+}
+
+.button:active::after {
+  transform: scale(3);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
 }
 
 /* Table Styling */
@@ -175,7 +237,8 @@ body {
   background-color: var(--panel-background);
 }
 
-.station-info-table th, .station-info-table td {
+.station-info-table th,
+.station-info-table td {
   padding: 10px;
   border: 1px solid #334155;
   color: var(--text-primary);
@@ -215,12 +278,13 @@ body {
   .dashboard-container {
     flex-direction: column;
   }
-  .control-panel, .main-content {
+  .control-panel,
+  .main-content {
     width: 100%;
   }
 }
 
-/* Container styling */
+/* Prediction Container */
 .prediction-container {
   background-color: var(--background-color);
   min-height: 100vh;
@@ -231,7 +295,6 @@ body {
   color: var(--text-primary);
 }
 
-/* Header styling */
 .prediction-header {
   font-size: 2rem;
   font-weight: bold;
@@ -239,7 +302,6 @@ body {
   margin-bottom: 20px;
 }
 
-/* Input section styling */
 .prediction-inputs {
   display: flex;
   flex-direction: column;
@@ -248,7 +310,6 @@ body {
   width: 100%;
 }
 
-/* Grouped input styling */
 .input-group {
   background-color: var(--panel-background);
   padding: 15px;
@@ -256,14 +317,12 @@ body {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Label styling */
 .input-label {
   font-weight: bold;
   color: var(--text-primary);
   margin-bottom: 8px;
 }
 
-/* Input field styling */
 .input-field {
   width: 100%;
   padding: 10px;
@@ -274,26 +333,64 @@ body {
   color: var(--text-primary);
 }
 
-/* Button styling */
-.predict-button {
-  width: 100%;
-  padding: 15px;
-  border-radius: var(--border-radius);
-  background-color: var(--primary-color);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  border: none;
+.date-picker {
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
-.predict-button:hover {
-  background-color: var(--primary-hover);
+.date-picker:hover {
+  box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
 }
 
-.predict-button:active {
-  background-color: var(--primary-active);
-  transform: translateY(1px);
+.date-picker .DateInput,
+.date-picker .SingleDatePicker_picker {
+    z-index: 1000;  /* Ensure the date picker calendar appears on top */
+    position: relative;  /* Enable z-index to take effect */
+}
+
+.dropdown-wrapper {
+  position: relative;
+  z-index: 5; /* Higher value to make sure it appears above the calendar */
+}
+
+.date-picker-wrapper {
+  position: relative;
+  z-index: 3; /* Slightly lower than the dropdown */
+}
+
+/* Wrapper for spacing */
+.time-picker-wrapper {
+  margin-top: 15px;
+}
+
+/* Styling for the time input */
+.time-picker {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  background-color: var(--panel-background);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  outline: none;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.time-picker::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* Hover and Focus Effects */
+.time-picker:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.time-picker:focus {
+  border-color: var(--primary-hover);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
