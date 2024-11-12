@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
 
 # Initial Plot Message
 def create_default_plot():
@@ -74,7 +74,7 @@ def create_delay_plots(airport_id, year, month):
     time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/merged_data/{airport_id}_training_data.csv"
-        df = pd.read_csv(file_path, storage_options={"token": os.getenv("gcs_storage_option")}, low_memory=False)
+        df = pd.read_csv(file_path, storage_options={"token": "flights-weather-project-878ff649f274.json"}, low_memory=False)
         df["UTC_DATE"] = pd.to_datetime(df["UTC_DATE"], errors="coerce")
         df = df[(df["UTC_DATE"].dt.year == year) & (df["UTC_DATE"].dt.month == month)]
 
@@ -97,7 +97,7 @@ def create_delay_plots(airport_id, year, month):
 
         # Load airport metadata
         airport_metadata = f"gs://airport-weather-data/airports-list-us.csv"
-        df_airport = pd.read_csv(airport_metadata, storage_options={"token": os.getenv("gcs_storage_option")})
+        df_airport = pd.read_csv(airport_metadata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
         df = df.merge(df_airport[["AIRPORT_ID", "AIRPORT"]], left_on="DestAirportID", right_on="AIRPORT_ID", how="left") 
 
         # Mapping days of the week for better readability
@@ -166,10 +166,10 @@ def create_cancellation_plot(airport_id, year, month):
     time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/merged_data/{airport_id}_training_data.csv"
-        df = pd.read_csv(file_path, storage_options={"token": os.getenv("gcs_storage_option")}, low_memory=False)
+        df = pd.read_csv(file_path, storage_options={"token": "flights-weather-project-878ff649f274.json"}, low_memory=False)
         df["UTC_DATE"] = pd.to_datetime(df["UTC_DATE"], errors='coerce')
         
-        df_airport = pd.read_csv(f"gs://airport-weather-data/airports-list-us.csv", storage_options={"token": os.getenv("gcs_storage_option")})
+        df_airport = pd.read_csv(f"gs://airport-weather-data/airports-list-us.csv", storage_options={"token": "flights-weather-project-878ff649f274.json"})
         df = df[(df["UTC_DATE"].dt.year == year) & (df["UTC_DATE"].dt.month == month)]
 
         if df.empty:

@@ -22,13 +22,13 @@ warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 load_dotenv()
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
 
 # Load airport metadata and closest station data
 df_airport_metadata = pd.read_csv("gs://airport-weather-data/airports-list-us.csv", 
-                                  storage_options={"token": os.getenv("gcs_storage_option")})
+                                  storage_options={"token": "flights-weather-project-878ff649f274.json"})
 closest_weather_airport = pd.read_csv("gs://airport-weather-data/closest_airport_weather.csv", 
-                                      storage_options={"token": os.getenv("gcs_storage_option")})
+                                      storage_options={"token": "flights-weather-project-878ff649f274.json"})
 
 # Define weather-related features
 weather_features = [
@@ -121,7 +121,7 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
         for fallback_path in fallback_paths:
             try:
                 fallback_df = pd.read_csv(fallback_path, 
-                                          storage_options={"token": os.getenv("gcs_storage_option")})
+                                          storage_options={"token": "flights-weather-project-878ff649f274.json"})
                 weather_forecasts = (
                     fallback_df[
                         (fallback_df["OriginState"] == origin_data["State"]) &

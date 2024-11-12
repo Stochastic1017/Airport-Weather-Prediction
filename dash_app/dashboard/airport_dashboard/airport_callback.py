@@ -20,18 +20,18 @@ from .airport_helpers import (create_default_plot, create_airport_map_figure,
 load_dotenv()
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
 
 # Mapbox token setup
 px.set_mapbox_access_token(os.getenv("mapbox_token"))
 
 # Load airport metadata
 airport_metdata = f"gs://airport-weather-data/airports-list-us.csv"
-df_airport = pd.read_csv(airport_metdata, storage_options={"token": os.getenv("gcs_storage_option")})
+df_airport = pd.read_csv(airport_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
 
 # Load airport metadata
 weather_metdata = f"gs://airport-weather-data/closest_airport_weather.csv"
-df_weather = pd.read_csv(weather_metdata, storage_options={"token": os.getenv("gcs_storage_option")})
+df_weather = pd.read_csv(weather_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
 
 @callback(
     [Output('airport-search-results', 'children'),

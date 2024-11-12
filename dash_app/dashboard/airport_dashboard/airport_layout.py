@@ -15,11 +15,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
 
 # Load airport metadata
 airport_metdata = f"gs://airport-weather-data/airports-list-us.csv"
-df_airport = pd.read_csv(airport_metdata, storage_options={"token": os.getenv("gcs_storage_option")})
+df_airport = pd.read_csv(airport_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
 
 # Unique states and cities for dropdown filtering
 states = [{'label': state, 'value': state} for state in df_airport['State'].unique()]

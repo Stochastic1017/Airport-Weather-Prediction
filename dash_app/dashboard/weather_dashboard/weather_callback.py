@@ -20,11 +20,11 @@ load_dotenv()
 px.set_mapbox_access_token(os.getenv("mapbox_token"))
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
 
 # Load airport metadata
 weather_metdata = f"gs://airport-weather-data/ncei-lcd-list-us.csv"
-df_station = pd.read_csv(weather_metdata, storage_options={"token": os.getenv("gcs_storage_option")})
+df_station = pd.read_csv(weather_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
 
 # Default plot function for unselected states/cities
 def create_default_plot():
@@ -51,7 +51,8 @@ def create_default_plot():
      Input("weather-city-selector", "value"),
      Input("weather-enhanced-map", "clickData")]
 )
-def update_map_and_station_info(mapbox_style, marker_size, marker_opacity, weather_color_scale, selected_state, selected_city, click_data):
+def update_map_and_station_info(mapbox_style, marker_size, marker_opacity, 
+                                weather_color_scale, selected_state, selected_city, click_data):
     
     # Determine the context of the callback
     ctx = callback_context
