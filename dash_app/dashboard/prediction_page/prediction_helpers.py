@@ -86,9 +86,10 @@ def get_weather_data_for_prediction(latitude, longitude, timestamp, username, pa
         print("API call failed, using fallback sources.")
         return None
 
-# Fallback method to load weather data from nearest station files
+# Enhanced fallback to load weather data from nearest station files
 def get_weather_estimates(origin_airport_id, departure_time, closest_weather_airport, 
-                          max_distance=100, n_nearest=5):
+                          max_distance=100, n_nearest=5, fallback_files=None, origin_state=None):
+    # First try: nearest stations within max_distance
     nearest_stations = closest_weather_airport[closest_weather_airport['AIRPORT_ID'] == int(origin_airport_id)]
     if nearest_stations.empty:
         print(f"No nearby stations found for airport {origin_airport_id}.")
@@ -104,13 +105,19 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
     weather_sums = {feature: 0.0 for feature in features}
     valid_counts = {feature: 0 for feature in features}
     
+    # Attempt to load data from each nearest station
     for _, station in nearest_stations.iterrows():
         station_id = int(station['STATION_ID'])
         file_path = f'gs://airport-weather-data/ncei-lcd/{station_id}.csv'
         
         try:
             weather_df = pd.read_csv(file_path, storage_options={"token": credentials})
+            weather_df['UTC_DATE'] = pd.to_datetime(weather_df['UTC_DATE'])  # Ensure correct datetime parsing
             daily_weather = weather_df[weather_df['UTC_DATE'].dt.date == departure_time.date()]
+            
+            if daily_weather.empty:
+                continue
+
             closest_time_idx = (daily_weather['UTC_DATE'] - departure_time).abs().idxmin()
             closest_weather = daily_weather.loc[closest_time_idx]
             for feature in features:
@@ -122,9 +129,16 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
             print(f"Weather file for station {station_id} not found.")
             continue
 
-    return {feature: (weather_sums[feature] / valid_counts[feature] if valid_counts[feature] > 0 else None) for feature in features}
+    # Calculate average or fall back to state-level aggregates if no valid counts
+    station_weather_data = {feature: (weather_sums[feature] / valid_counts[feature]
+                                      if valid_counts[feature] > 0 else None) for feature in features}
 
-# Further fallbacks using precomputed state-level summaries
+    # State-level aggregate fallback
+    if all(value is None for value in station_weather_data.values()) and fallback_files:
+        return load_fallback_summary(fallback_files, origin_state=origin_state, time_key=departure_time.strftime('%H:%M'))
+    return station_weather_data
+
+# Enhanced final state-level aggregate fallback
 def load_fallback_summary(fallback_files, origin_state, origin_city=None, time_key=None):
     for file_name in fallback_files:
         try:
@@ -140,7 +154,25 @@ def load_fallback_summary(fallback_files, origin_state, origin_city=None, time_k
         except Exception as e:
             print(f"Unable to load from gs://airport-weather-data/aggregate/{file_name}: {e}")
     print("No fallback data found.")
-    return {feature: 0 for feature in weather_features}
+    return {feature: 0 for feature in weather_features}  # Default zero values if no data found
+
+# Main weather data function to ensure bulletproof fallback
+def fetch_complete_weather_data(latitude, longitude, timestamp, username, password, origin_airport_id, departure_time, closest_weather_airport, origin_state, fallback_files):
+    weather_data = get_weather_data_for_prediction(latitude, longitude, timestamp, username, password)
+    
+    # Proceed with fallback to nearest stations if API fails or data is incomplete
+    if weather_data is None or any(value is None for value in weather_data.values()):
+        weather_data = get_weather_estimates(
+            origin_airport_id, departure_time, closest_weather_airport,
+            fallback_files=fallback_files, origin_state=origin_state
+        )
+
+    # Final check to ensure no `None` values
+    if any(value is None for value in weather_data.values()):
+        print("Incomplete weather data; using state-level aggregate as final fallback.")
+        weather_data = load_fallback_summary(fallback_files, origin_state, time_key=departure_time.strftime('%H:%M'))
+
+    return weather_data
 
 # Convert local time to UTC
 def convert_to_utc(local_time_str, date_str, lat, lon):
