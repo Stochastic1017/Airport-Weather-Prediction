@@ -6,6 +6,7 @@ dash-iconify==0.1.2
 dash-mantine-components==0.12.0
 dash-table==5.0.0
 dash-tools==1.12.0
+python-dotenv==1.0.1
 gcsfs==2024.10.0
 numpy==1.26.4
 pandas==2.1.4
