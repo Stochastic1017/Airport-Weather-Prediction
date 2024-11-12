@@ -183,7 +183,7 @@ def update_map_and_station_info(mapbox_style, marker_size, marker_opacity, gradi
     # Add weather station trails if 'Show Nearby Weather Stations' is selected
     if 'visible' in show_weather_station and airport_info is not None:
         airport_id = airport_info['AIRPORT_ID']
-        weather_stations = get_closest_weather_stations(airport_id)
+        weather_stations = get_closest_weather_stations(airport_id, df_weather)
         
         if not weather_stations.empty:
             # Add weather stations as scatter points with enhanced hover data

@@ -79,7 +79,7 @@ def create_delay_plots(airport_id, year, month):
     time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/merged_data/{airport_id}_training_data.csv"
-        df = pd.read_csv(file_path, storage_options={"token": credentials}, low_memory=False)
+        df = pd.read_csv(file_path, storage_options={"token": "flights-weather-project-33452f8b2c56.json"}, low_memory=False)
         df["UTC_DATE"] = pd.to_datetime(df["UTC_DATE"], errors="coerce")
         df = df[(df["UTC_DATE"].dt.year == year) & (df["UTC_DATE"].dt.month == month)]
 
@@ -118,7 +118,11 @@ def create_delay_plots(airport_id, year, month):
 
         fig = make_subplots(
             rows=4, cols=4,
-            vertical_spacing=0.08, horizontal_spacing=0.03
+            vertical_spacing=0.08, horizontal_spacing=0.03,
+            subplot_titles=["Arrival Distribution", "Departure Distribution", "Total Flight Distribution", "Taxi Distribution",
+                            "Arrival by Day", "Departure by Day", "Total Flight by Day", "Taxi by Day",
+                            "Arrival by Airline", "Departure by Airline", "Total Flight by Airline", "Taxi by Airline",
+                            "Arrival by Destination", "Departure by Destination", "Total Flight by Destination", "Taxi by Destination"]
         )
 
         for idx, dt in enumerate(delay_types):
@@ -129,41 +133,81 @@ def create_delay_plots(airport_id, year, month):
 
             # Row 1: Histogram (Count)
             fig.add_trace(
-                go.Histogram(x=df[delay].dropna(), marker=dict(color=color), name=label, showlegend=idx == 0),
+                go.Histogram(
+                    x=df[delay].dropna(),
+                    marker=dict(color=color),
+                    name=f"{label} Distribution",
+                    showlegend=False
+                ),
                 row=1, col=col
             )
 
             # Row 2: Box plot by Day of Week (outliers hidden)
             fig.add_trace(
-                go.Box(y=df[delay].dropna(), x=df["DayOfWeek"], marker=dict(color=color), name=label, boxpoints=False, showlegend=False),
+                go.Box(
+                    y=df[delay].dropna(),
+                    x=df["DayOfWeek"],
+                    marker=dict(color=color),
+                    name=f"{label} by Day",
+                    boxpoints=False,
+                    showlegend=False
+                ),
                 row=2, col=col
             )
 
             # Row 3: Box plot by Marketing Airline (outliers hidden)
             fig.add_trace(
-                go.Box(y=df[delay].dropna(), x=df["Marketing_Airline_Network"], marker=dict(color=color), name=label, boxpoints=False, showlegend=False),
+                go.Box(
+                    y=df[delay].dropna(),
+                    x=df["Marketing_Airline_Network"],
+                    marker=dict(color=color),
+                    name=f"{label} by Airline",
+                    boxpoints=False,
+                    showlegend=False
+                ),
                 row=3, col=col
             )
 
             # Row 4: Box plot by Destination Airport (outliers hidden)
             fig.add_trace(
-                go.Box(y=df[delay].dropna(), x=df["AIRPORT"], marker=dict(color=color), name=label, boxpoints=False, showlegend=False),
+                go.Box(
+                    y=df[delay].dropna(),
+                    x=df["AIRPORT"],
+                    marker=dict(color=color),
+                    name=f"{label} by Destination",
+                    boxpoints=False,
+                    showlegend=False
+                ),
                 row=4, col=col
             )
 
         fig.update_layout(
             template="plotly_dark",
             autosize=True,
-            margin=dict(t=20, b=20, l=20, r=20),
+            margin=dict(t=30, b=20, l=20, r=20),
             showlegend=True,
-            legend=dict(title="Delay Types"),
-            font=dict(size=10)  # Adjust subplot font size for better fit
+            legend=dict(
+                title="Delay Types",
+                orientation="h",
+                yanchor="top",
+                y=1.1,  # Place above the top of the chart
+                xanchor="center",
+                x=0.5
+            ),
+            font=dict(size=8)  # Adjust subplot font size for better fit
         )
+        
         return fig
 
     except Exception as e:
         fig = go.Figure()
-        fig.add_annotation(text=f"Error loading data for airport {airport_id}:<br>{str(e)}", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(size=14, color="red"))
+        fig.add_annotation(
+            text=f"Error loading data for airport {airport_id}:<br>{str(e)}",
+            xref="paper", yref="paper",
+            x=0.5, y=0.5,
+            showarrow=False,
+            font=dict(size=14, color="red")
+        )
         fig.update_layout(template="plotly_dark", autosize=True)
         return fig
     
@@ -222,7 +266,7 @@ def create_cancellation_plot(airport_id, year, month):
         fig.update_layout(title=f"Error - {airport_id} ({year}-{month})", template="plotly_dark", autosize=True)
         return fig
 
-def get_closest_weather_stations(airport_id, max_distance=100, max_stations=5):  
+def get_closest_weather_stations(airport_id, df_weather, max_distance=100, max_stations=5):  
     closest_stations = df_weather[df_weather['AIRPORT_ID'] == airport_id]
     closest_stations = closest_stations[closest_stations['DISTANCE_KM'] <= max_distance].nsmallest(max_stations, 'DISTANCE_KM')
     

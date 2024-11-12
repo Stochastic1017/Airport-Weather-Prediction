@@ -45,7 +45,7 @@ def create_default_plot():
         autosize=True,  # Enable autosizing
         showlegend=False,
         hovermode='closest',
-        margin=dict(t=100, b=50, l=50, r=50)
+        margin=dict(t=100, b=50, l=50, r=50),
         template="plotly_dark"
     )
     return fig
