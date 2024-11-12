@@ -13,7 +13,7 @@ import json
 from dotenv import load_dotenv
 from google.oauth2 import service_account
 from .airport_helpers import (create_default_plot, create_airport_map_figure, 
-                              create_delay_plots, create_cancellation_plot)
+                              create_delay_plots, create_cancellation_plot, get_closest_weather_stations)
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
@@ -179,6 +179,35 @@ def update_map_and_station_info(mapbox_style, marker_size, marker_opacity, gradi
             zoom=zoom
         )
     )
+
+    # Add weather station trails if 'Show Nearby Weather Stations' is selected
+    if 'visible' in show_weather_station and airport_info is not None:
+        airport_id = airport_info['AIRPORT_ID']
+        weather_stations = get_closest_weather_stations(airport_id)
+        
+        if not weather_stations.empty:
+            # Add weather stations as scatter points with enhanced hover data
+            fig.add_trace(
+                px.scatter_mapbox(
+                    weather_stations, lat="WEATHER_COORDINATES_Lat", lon="WEATHER_COORDINATES_Lon",
+                    hover_name="WEATHER_STATION_NAME",
+                    hover_data={
+                        "WEATHER_ELEVATION": True,
+                        "WEATHER_COUNTRY": True,
+                        "WEATHER_STATE": True,
+                        "DISTANCE_KM": True
+                    }
+                ).data[0].update(marker=dict(color="black", size=8))
+            )
+            # Draw black trails between airport and weather stations
+            for _, station in weather_stations.iterrows():
+                fig.add_trace(px.line_mapbox(
+                    pd.DataFrame({
+                        'lat': [airport_info['LATITUDE'], station['WEATHER_COORDINATES_Lat']],
+                        'lon': [airport_info['LONGITUDE'], station['WEATHER_COORDINATES_Lon']]
+                    }),
+                    lat="lat", lon="lon"
+                ).data[0].update(line=dict(color="black", width=2)))
 
     # Generate airport info table if airport_info is available
     if airport_info is not None:
