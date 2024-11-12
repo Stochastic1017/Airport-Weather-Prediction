@@ -221,3 +221,13 @@ def create_cancellation_plot(airport_id, year, month):
         fig.add_annotation(text=f"Error loading data for airport {airport_id}:<br>{str(e)}", xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False, font=dict(size=14, color="red"))
         fig.update_layout(title=f"Error - {airport_id} ({year}-{month})", template="plotly_dark", autosize=True)
         return fig
+
+def get_closest_weather_stations(airport_id, max_distance=100, max_stations=5):  
+    closest_stations = df_weather[df_weather['AIRPORT_ID'] == airport_id]
+    closest_stations = closest_stations[closest_stations['DISTANCE_KM'] <= max_distance].nsmallest(max_stations, 'DISTANCE_KM')
+    
+    # Split WEATHER_COORDINATES column into latitude and longitude for plotting
+    closest_stations[['WEATHER_COORDINATES_Lat', 'WEATHER_COORDINATES_Lon']] = closest_stations['WEATHER_COORDINATES'].str.strip('()').str.split(',', expand=True).astype(float)
+    
+    return closest_stations
+    
