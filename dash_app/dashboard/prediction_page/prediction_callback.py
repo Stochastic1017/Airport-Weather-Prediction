@@ -23,7 +23,8 @@ warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
-credentials = service_account.Credentials.from_service_account_info(
+with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
+    credentials = service_account.Credentials.from_service_account_info(
             json.loads("/etc/secrets/GCP_CREDENTIALS"))
 
 # Initialize Google Cloud Storage FileSystem

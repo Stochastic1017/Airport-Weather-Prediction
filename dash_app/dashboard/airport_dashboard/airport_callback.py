@@ -21,7 +21,8 @@ load_dotenv()
 # Mapbox token setup
 px.set_mapbox_access_token(os.getenv("mapbox_token"))
 
-credentials = service_account.Credentials.from_service_account_info(
+with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
+    credentials = service_account.Credentials.from_service_account_info(
             json.loads("/etc/secrets/GCP_CREDENTIALS"))
 
 # Load airport metadata

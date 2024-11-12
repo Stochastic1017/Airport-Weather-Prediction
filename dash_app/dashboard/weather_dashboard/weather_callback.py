@@ -18,7 +18,8 @@ from .weather_helpers import (create_weather_map_figure, create_timeseries_plot)
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
-credentials = service_account.Credentials.from_service_account_info(
+with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
+    credentials = service_account.Credentials.from_service_account_info(
             json.loads("/etc/secrets/GCP_CREDENTIALS"))
 
 # Mapbox token

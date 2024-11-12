@@ -20,7 +20,8 @@ from google.oauth2 import service_account
 import warnings
 warnings.simplefilter("ignore", category=FutureWarning)
 
-credentials = service_account.Credentials.from_service_account_info(
+with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
+    credentials = service_account.Credentials.from_service_account_info(
             json.loads("/etc/secrets/GCP_CREDENTIALS"))
 
 # Loading environment variable with sensitive API keys
