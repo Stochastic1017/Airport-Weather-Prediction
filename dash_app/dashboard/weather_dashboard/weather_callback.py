@@ -42,8 +42,10 @@ def create_default_plot():
         plot_bgcolor="black",
         paper_bgcolor="black",
         title="Station Time-Series Overview",
-        height=1060,
-        width=1510,
+        autosize=True,  # Enable autosizing
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(t=100, b=50, l=50, r=50)
         template="plotly_dark"
     )
     return fig
