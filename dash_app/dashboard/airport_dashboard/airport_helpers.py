@@ -30,12 +30,12 @@ def create_default_plot():
     fig.update_layout(
         plot_bgcolor="black",
         paper_bgcolor="black",
-        title="Station Time-Series Overview",
+        title=None,
         autosize=True,
         template="plotly_dark",
-        margin=dict(t=20, b=20, l=20, r=20),
-        height=400,  # Default height for the placeholder plot
-        width=800   # Default width for the placeholder plot
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(t=100, b=50, l=50, r=50)
     )
     return fig
 
