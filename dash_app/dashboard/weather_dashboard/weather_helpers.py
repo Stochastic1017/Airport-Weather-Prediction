@@ -6,7 +6,6 @@ import json
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import time
 import gcsfs
 import plotly.express as px
 import plotly.graph_objects as go
@@ -57,7 +56,6 @@ def create_weather_map_figure(mapbox_style, marker_size, marker_opacity,
     return fig
 
 def create_timeseries_plot(station, year, metric, title_info):
-    time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/ncei-lcd/{station}.csv"
         df = pd.read_csv(file_path, storage_options={"token": credentials}, low_memory=False)
