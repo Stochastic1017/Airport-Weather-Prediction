@@ -1,7 +1,6 @@
 
 import os
 import sys
-import json
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -11,37 +10,27 @@ import pandas as pd
 from dash import dcc, html, callback, Input, Output
 import plotly.express as px
 from dotenv import load_dotenv
-from google.oauth2 import service_account
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
-with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
-    credentials_info = json.loads(f.read())  # Read and parse the file contents
-    credentials = service_account.Credentials.from_service_account_info(credentials_info,
-                                                                        scopes=['https://www.googleapis.com/auth/devstorage.read_write',
-                                                                                'https://www.googleapis.com/auth/cloud-platform',
-                                                                                'https://www.googleapis.com/auth/drive'])
-
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-33452f8b2c56.json")
 
 # Load options for prediction from the CSV
 df_options = pd.read_csv("gs://airport-weather-data/options_for_prediction.csv", 
-                         storage_options={"token": credentials})
+                         storage_options={"token": "flights-weather-project-33452f8b2c56.json"})
 df_airports = pd.read_csv("gs://airport-weather-data/airports-list-us.csv", 
-                          storage_options={"token": credentials})
+                          storage_options={"token": "flights-weather-project-33452f8b2c56.json"})
 
-# Merge options_for_prediction with latitude and longitude from airports-list-us
+# Merge options for prediction
 df_merged = df_options.merge(df_airports[['AIRPORT_ID', 'LATITUDE', 'LONGITUDE']], 
                              left_on='airport_id', 
                              right_on='AIRPORT_ID',
                              how='left')
 
-# Extract options for airlines and airports with latitude and longitude
+# Dropdown options
 airline_options = [{"label": airline, "value": airline} for airline in df_merged['airline'].dropna().unique()]
-
-# Step 1: Create airport_options with only label and value
 airport_options = [
     {
         "label": f"{row['airport_display_name']} ({row['airport_code']}, ID: {int(row['airport_id'])})",
@@ -50,7 +39,7 @@ airport_options = [
     for _, row in df_merged.dropna(subset=['airport_id', 'airport_display_name', 'airport_code']).iterrows()
 ]
 
-# Step 2: Create a dictionary for quick latitude and longitude lookup
+# Latitude and longitude lookup
 airport_coordinates = {
     int(row['airport_id']): {"latitude": row['LATITUDE'], "longitude": row['LONGITUDE']}
     for _, row in df_merged.dropna(subset=['airport_id', 'LATITUDE', 'LONGITUDE']).iterrows()
@@ -96,93 +85,113 @@ random_forest_prediction_layout = html.Div(
                         html.Div(
                             className="input-group",
                             children=[
-                                html.Label("Airline", className="input-label", style={"fontWeight": "bold", "fontSize": "1.2rem", "marginBottom": "10px"}),
-                                dcc.Dropdown(
-                                    id="airline-input",
-                                    options=airline_options,
-                                    placeholder="Select Airline",
-                                    className="dropdown",
-                                    style={"width": "100%", "fontSize": "1.1rem", "padding": "15px"},
-                                    searchable=True
+                                html.Label("Airline", className="input-label"),
+                                html.Div(
+                                    dcc.Dropdown(
+                                        id="airline-input",
+                                        options=airline_options,
+                                        placeholder="Select Airline",
+                                        className="dropdown",
+                                        style={"width": "100%", "fontSize": "1rem", "padding": "10px"},
+                                        searchable=True
+                                    ),
+                                    className="dropdown-wrapper",
+                                    style={"zIndex": 5}
                                 ),
                                 html.Div(id="airline-error", className="error-message", style={'color': 'red', "marginTop": "5px"}),
-                                
-                                html.Label("Flight Date", className="input-label", style={"fontWeight": "bold", "fontSize": "1.2rem", "marginTop": "20px", "marginBottom": "10px"}),
-                                dcc.DatePickerSingle(
-                                    id="date-input",
-                                    placeholder="Select Date",
-                                    className="date-picker",
-                                    display_format="YYYY-MM-DD",
-                                    style={"width": "100%", "fontSize": "1.1rem", "padding": "15px"}
-                                ),
-                                html.Div(id="date-error", className="error-message", style={'color': 'red', "marginTop": "5px"})
+
+                                html.Label("Flight Date", className="input-label"),
+                                html.Div(
+                                    dcc.DatePickerSingle(
+                                        id="date-input",
+                                        placeholder="Select Date",
+                                        display_format="YYYY-MM-DD",
+                                        min_date_allowed="2024-11-01",
+                                        max_date_allowed="2024-12-31",
+                                        date="2024-11-01",
+                                        initial_visible_month="2024-11-01",
+                                        style={
+                                            "width": "100%",
+                                            "padding": "10px",
+                                            "fontSize": "1rem",
+                                            "borderRadius": "10px",
+                                            "border": "1px solid #334155",
+                                            "backgroundColor": "#1e293b",
+                                            "color": "#cbd5e1"
+                                        }
+                                    ),
+                                    className="date-picker-wrapper",
+                                    style={"zIndex": 3}
+                                )
                             ],
                             style={"marginBottom": "20px"}
                         ),
+
                         html.Div(
                             className="input-group",
                             children=[
-                                html.Label("Origin Airport", className="input-label", style={"fontWeight": "bold", "fontSize": "1.2rem", "marginBottom": "10px"}),
+                                html.Label("Origin Airport", className="input-label"),
                                 dcc.Dropdown(
                                     id="origin-airport-input",
                                     options=airport_options,
                                     placeholder="Select Origin Airport",
                                     className="dropdown",
-                                    searchable=True,
-                                    style={"width": "100%", "fontSize": "1.1rem", "padding": "15px"}
+                                    style={"width": "100%", "fontSize": "1rem", "padding": "10px"},
+                                    searchable=True
                                 ),
-                                html.Div(id="origin-error", className="error-message", style={'color': 'red', "marginTop": "5px"}),
-
-                                html.Label("Departure Time (Local - HH:MM)", className="input-label", style={"fontWeight": "bold", "fontSize": "1.2rem", "marginTop": "20px", "marginBottom": "10px"}),
+                                html.Label("Departure Time (Local)", className="input-label"),
                                 dcc.Input(
                                     id="departure-time-input",
                                     type="text",
-                                    placeholder="Enter Departure Time (HH:MM)",
+                                    placeholder="HH:MM (24-Hour)",
                                     className="time-picker",
                                     style={
                                         "width": "100%",
-                                        "padding": "15px",
-                                        "fontSize": "1.1rem",
-                                        "border": "1px solid #ddd",
-                                        "borderRadius": "4px"
+                                        "padding": "10px",
+                                        "fontSize": "1rem",
+                                        "borderRadius": "8px",
+                                        "border": "1px solid #334155",
+                                        "backgroundColor": "#1e293b",
+                                        "color": "#cbd5e1"
                                     }
-                                ),
-                                html.Div(id="departure-time-error", className="error-message", style={'color': 'red', "marginTop": "5px"})
+                                )
                             ],
                             style={"marginBottom": "20px"}
                         ),
+
                         html.Div(
                             className="input-group",
                             children=[
-                                html.Label("Destination Airport", className="input-label", style={"fontWeight": "bold", "fontSize": "1.2rem", "marginBottom": "10px"}),
+                                html.Label("Destination Airport", className="input-label"),
                                 dcc.Dropdown(
                                     id="destination-airport-input",
                                     options=airport_options,
                                     placeholder="Select Destination Airport",
                                     className="dropdown",
-                                    searchable=True,
-                                    style={"width": "100%", "fontSize": "1.1rem", "padding": "15px"}
+                                    style={"width": "100%", "fontSize": "1rem", "padding": "10px"},
+                                    searchable=True
                                 ),
-                                html.Div(id="destination-error", className="error-message", style={'color': 'red', "marginTop": "5px"}),
-
-                                html.Label("Arrival Time (Local - HH:MM)", className="input-label", style={"fontWeight": "bold", "fontSize": "1.2rem", "marginTop": "20px", "marginBottom": "10px"}),
+                                html.Label("Arrival Time (Local)", className="input-label"),
                                 dcc.Input(
                                     id="arrival-time-input",
                                     type="text",
-                                    placeholder="Enter Arrival Time (HH:MM)",
+                                    placeholder="HH:MM (24-Hour)",
                                     className="time-picker",
                                     style={
                                         "width": "100%",
-                                        "padding": "15px",
-                                        "fontSize": "1.1rem",
-                                        "border": "1px solid #ddd",
-                                        "borderRadius": "4px"
+                                        "padding": "10px",
+                                        "fontSize": "1rem",
+                                        "borderRadius": "8px",
+                                        "border": "1px solid #334155",
+                                        "backgroundColor": "#1e293b",
+                                        "color": "#cbd5e1"
                                     }
-                                ),
-                                html.Div(id="arrival-time-error", className="error-message", style={'color': 'red', "marginTop": "5px"})
+                                )
                             ],
                             style={"marginBottom": "20px"}
                         ),
+                        
+                        # Prediction button
                         html.Div(
                             html.Button(
                                 "Predict Delays and Cancellation",
@@ -202,49 +211,68 @@ random_forest_prediction_layout = html.Div(
                                 }
                             ),
                             style={"textAlign": "center", "marginTop": "20px"}
-                        ),
+                        )
                     ],
                     style={
-                        "padding": "30px",
+                        "padding": "20px",
                         "border": "1px solid #e0e0e0",
                         "borderRadius": "8px",
-                        "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
-                        "backgroundColor": "#f9f9f9",
+                        "backgroundColor": "#1e293b",
                         "width": "100%"
                     }
                 ),
-                
-                # Map Output Section
-                html.Div(
-                    dcc.Graph(id="flight-map", style={"height": "500px", "border": "1px solid #e0e0e0", "borderRadius": "8px"}),
-                    style={"padding": "10px"}
+
+                # Map Section with Loading Spinner
+                dcc.Loading(
+                    id="loading-map",
+                    type="cube",
+                    children=html.Div(
+                        dcc.Graph(
+                            id="flight-map",
+                            style={
+                                "width": "100%",
+                                "height": "500px",
+                                "border": "1px solid #e0e0e0",
+                                "borderRadius": "8px"
+                            }
+                        ),
+                        style={
+                            "padding": "20px",
+                            "border": "1px solid #e0e0e0",
+                            "borderRadius": "8px",
+                            "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
+                            "backgroundColor": "#1e293b",
+                            "width": "100%",
+                            "marginTop": "20px",
+                            "textAlign": "center"  # Center-align the map in the container
+                        }
+                    )
                 )
             ]
         ),
-        
-        # Loading Spinner and Prediction Output Section
+
+        # Prediction Output Section with Cube Loading Animation
         dcc.Loading(
             id="loading-prediction",
             type="cube",
             children=html.Div(
                 id="prediction-output",
                 style={
-                    'padding': '30px',
-                    'color': '#2b3e50',
+                    "padding": "30px",
+                    "color": "#2b3e50",
                     "fontSize": "1.3rem",
                     "backgroundColor": "#e0f7fa",
                     "borderRadius": "8px",
                     "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
-                    "textAlign": "center"
+                    "textAlign": "center",
+                    "marginTop": "20px"
                 }
             ),
-            style={
-                'marginTop': '50px',
-                'fontSize': '1.3rem'
-            }
-        ),
+            style={"marginTop": "50px"}
+        )
     ]
 )
+
 
 @callback(
     Output("flight-map", "figure"),
@@ -274,13 +302,13 @@ def update_map(origin_airport, destination_airport):
             mapbox_style="carto-positron"
         )
         
-        # Add the line from origin to destination
+        # Add line trace with theme color
         fig.add_trace(
             px.line_mapbox(
                 map_data,
                 lat='lat',
                 lon='lon'
-            ).data[0]
+            ).data[0].update(line=dict(color="#5c6bc0"))  # Set line color to match theme
         )
 
         return fig
