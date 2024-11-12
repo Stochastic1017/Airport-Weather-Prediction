@@ -6,7 +6,6 @@ import json
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import time
 import plotly.graph_objects as go
 import pandas as pd
 import plotly.express as px
@@ -76,7 +75,6 @@ def create_airport_map_figure(mapbox_style, marker_size, marker_opacity, filtere
     return fig
 
 def create_delay_plots(airport_id, year, month):
-    time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/merged_data/{airport_id}_training_data.csv"
         df = pd.read_csv(file_path, storage_options={"token": "flights-weather-project-33452f8b2c56.json"}, low_memory=False)
@@ -212,7 +210,6 @@ def create_delay_plots(airport_id, year, month):
         return fig
     
 def create_cancellation_plot(airport_id, year, month):
-    time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/merged_data/{airport_id}_training_data.csv"
         df = pd.read_csv(file_path, storage_options={"token": credentials}, low_memory=False)
