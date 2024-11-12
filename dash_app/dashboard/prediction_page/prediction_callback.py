@@ -1,6 +1,7 @@
 
 import os
 import sys
+import json
 
 # Add current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -10,6 +11,7 @@ import pandas as pd
 from dash import Output, Input, State, callback
 import gcsfs
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 from .prediction_helpers import (haversine, get_weather_data_for_prediction, 
                                  get_weather_estimates, convert_to_utc, 
                                  validate_time_format, create_prediction_table)
@@ -21,14 +23,17 @@ warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
 # Load airport metadata and closest station data
 df_airport_metadata = pd.read_csv("gs://airport-weather-data/airports-list-us.csv", 
-                                  storage_options={"token": "flights-weather-project-878ff649f274.json"})
+                                  storage_options={"token": credentials})
 closest_weather_airport = pd.read_csv("gs://airport-weather-data/closest_airport_weather.csv", 
-                                      storage_options={"token": "flights-weather-project-878ff649f274.json"})
+                                      storage_options={"token": credentials})
 
 # Define weather-related features
 weather_features = [
@@ -121,7 +126,7 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
         for fallback_path in fallback_paths:
             try:
                 fallback_df = pd.read_csv(fallback_path, 
-                                          storage_options={"token": "flights-weather-project-878ff649f274.json"})
+                                          storage_options={"token": credentials})
                 weather_forecasts = (
                     fallback_df[
                         (fallback_df["OriginState"] == origin_data["State"]) &

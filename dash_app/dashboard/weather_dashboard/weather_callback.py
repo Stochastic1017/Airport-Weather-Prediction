@@ -1,6 +1,7 @@
 
 import os
 import sys
+import json
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -11,20 +12,24 @@ import plotly.graph_objects as go
 from dash import callback, callback_context, Output, Input, State, html
 from dotenv import load_dotenv
 import plotly.express as px
+from google.oauth2 import service_account
 from .weather_helpers import (create_weather_map_figure, create_timeseries_plot)
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+
 # Mapbox token
 px.set_mapbox_access_token(os.getenv("mapbox_token"))
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
 # Load airport metadata
 weather_metdata = f"gs://airport-weather-data/ncei-lcd-list-us.csv"
-df_station = pd.read_csv(weather_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
+df_station = pd.read_csv(weather_metdata, storage_options={"token": credentials})
 
 # Default plot function for unselected states/cities
 def create_default_plot():

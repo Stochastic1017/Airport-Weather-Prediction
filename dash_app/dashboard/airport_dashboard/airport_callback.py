@@ -5,33 +5,32 @@ import sys
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import gcsfs
 import pandas as pd
 from dash import callback, callback_context, Output, State, Input, html, ALL, ctx
 from dash.exceptions import PreventUpdate
-import plotly.graph_objects as go
 import plotly.express as px
 import json
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 from .airport_helpers import (create_default_plot, create_airport_map_figure, 
                               create_delay_plots, create_cancellation_plot)
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
-# Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
-
 # Mapbox token setup
 px.set_mapbox_access_token(os.getenv("mapbox_token"))
 
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+
 # Load airport metadata
 airport_metdata = f"gs://airport-weather-data/airports-list-us.csv"
-df_airport = pd.read_csv(airport_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
+df_airport = pd.read_csv(airport_metdata, storage_options={"token": credentials})
 
 # Load airport metadata
 weather_metdata = f"gs://airport-weather-data/closest_airport_weather.csv"
-df_weather = pd.read_csv(weather_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
+df_weather = pd.read_csv(weather_metdata, storage_options={"token": credentials})
 
 @callback(
     [Output('airport-search-results', 'children'),

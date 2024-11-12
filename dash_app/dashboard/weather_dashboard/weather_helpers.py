@@ -1,6 +1,7 @@
 
 import os
 import sys
+import json
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -14,15 +15,19 @@ import numpy as np
 from scipy import stats
 from plotly.subplots import make_subplots
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 
 import warnings
 warnings.simplefilter("ignore", category=FutureWarning)
+
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
 def create_weather_map_figure(mapbox_style, marker_size, marker_opacity, 
                               weather_color_scale, filtered_df, center=None, zoom=3.5):
@@ -51,7 +56,7 @@ def create_timeseries_plot(station, year, metric, title_info):
     time.sleep(3)
     try:
         file_path = f"gs://airport-weather-data/ncei-lcd/{station}.csv"
-        df = pd.read_csv(file_path, storage_options={"token": "flights-weather-project-878ff649f274.json"}, low_memory=False)
+        df = pd.read_csv(file_path, storage_options={"token": credentials}, low_memory=False)
         df["UTC_DATE"] = pd.to_datetime(df["UTC_DATE"], errors='coerce')
         months_to_plot = [1, 11, 12]  # January, November, December
         filtered_df = df[(df["UTC_DATE"].dt.month.isin(months_to_plot)) & 

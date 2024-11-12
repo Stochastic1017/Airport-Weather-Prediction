@@ -5,21 +5,22 @@ import sys
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import gcsfs
+import json
 import numpy as np
 import pandas as pd
 from dash import dcc, html, Output, Input, callback
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
-# Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token="flights-weather-project-878ff649f274.json")
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
 
 # Load airport metadata
 airport_metdata = f"gs://airport-weather-data/airports-list-us.csv"
-df_airport = pd.read_csv(airport_metdata, storage_options={"token": "flights-weather-project-878ff649f274.json"})
+df_airport = pd.read_csv(airport_metdata, storage_options={"token": credentials})
 
 # Unique states and cities for dropdown filtering
 states = [{'label': state, 'value': state} for state in df_airport['State'].unique()]

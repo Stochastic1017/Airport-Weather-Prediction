@@ -1,27 +1,32 @@
 
 import os
 import sys
+import json
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import re
 import gcsfs
-import pandas as pd
+import pytz
 import requests
+import pandas as pd
 from requests.auth import HTTPBasicAuth
 from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime
-import pytz
 from dash import html
 from timezonefinder import TimezoneFinder
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
 # Define weather-related features
 weather_features = [
@@ -100,7 +105,7 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
         file_path = f'gs://airport-weather-data/ncei-lcd/{station_id}.csv'
         
         try:
-            weather_df = pd.read_csv(file_path, storage_options={"token": os.getenv("gcs_storage_option")})
+            weather_df = pd.read_csv(file_path, storage_options={"token": credentials})
             daily_weather = weather_df[weather_df['UTC_DATE'].dt.date == departure_time.date()]
             closest_time_idx = (daily_weather['UTC_DATE'] - departure_time).abs().idxmin()
             closest_weather = daily_weather.loc[closest_time_idx]
@@ -119,7 +124,7 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
 def load_fallback_summary(fallback_files, origin_state, origin_city=None, time_key=None):
     for file_name in fallback_files:
         try:
-            fallback_data = pd.read_csv(f"gs://airport-weather-data/aggregate/{file_name}", storage_options={"token": os.getenv("gcs_storage_option")})
+            fallback_data = pd.read_csv(f"gs://airport-weather-data/aggregate/{file_name}", storage_options={"token": credentials})
             filtered_data = fallback_data[fallback_data["OriginState"] == origin_state]
             if origin_city:
                 filtered_data = filtered_data[filtered_data["OriginCity"] == origin_city]

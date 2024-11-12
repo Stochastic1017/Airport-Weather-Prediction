@@ -1,6 +1,7 @@
 
 import os
 import sys
+import json
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -10,18 +11,22 @@ import pandas as pd
 from dash import dcc, html, callback, Input, Output
 import plotly.express as px
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+
 # Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=os.getenv("gcs_storage_option"))
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
 # Load options for prediction from the CSV
 df_options = pd.read_csv("gs://airport-weather-data/options_for_prediction.csv", 
-                         storage_options={"token": os.getenv("gcs_storage_option")})
+                         storage_options={"token": credentials})
 df_airports = pd.read_csv("gs://airport-weather-data/airports-list-us.csv", 
-                          storage_options={"token": os.getenv("gcs_storage_option")})
+                          storage_options={"token": credentials})
 
 # Merge options_for_prediction with latitude and longitude from airports-list-us
 df_merged = df_options.merge(df_airports[['AIRPORT_ID', 'LATITUDE', 'LONGITUDE']], 

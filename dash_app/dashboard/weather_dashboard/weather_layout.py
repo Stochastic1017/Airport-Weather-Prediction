@@ -1,6 +1,7 @@
 
 import os
 import sys
+import json
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -9,13 +10,17 @@ import numpy as np
 import pandas as pd
 from dash import dcc, html
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 
 # Loading environment variable with sensitive API keys
 load_dotenv()
 
+credentials = service_account.Credentials.from_service_account_info(
+            json.loads("/etc/secrets/GCP_CREDENTIALS"))
+
 # Load airport metadata
 weather_metdata = f"gs://airport-weather-data/ncei-lcd-list-us.csv"
-df_station = pd.read_csv(weather_metdata, storage_options={"token": os.getenv("gcs_storage_option")})
+df_station = pd.read_csv(weather_metdata, storage_options={"token": credentials})
 
 years = [2018, 2019, 2020, 2021, 2022, 2023, 2024]
 
