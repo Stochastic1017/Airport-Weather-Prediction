@@ -21,12 +21,11 @@ load_dotenv()
 # Mapbox token setup
 px.set_mapbox_access_token(os.getenv("mapbox_token"))
 
-with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
-    credentials_info = json.loads(f.read())  # Read and parse the file contents
-    credentials = service_account.Credentials.from_service_account_info(credentials_info,
-                                                                        scopes=['https://www.googleapis.com/auth/devstorage.read_write',
-                                                                                'https://www.googleapis.com/auth/cloud-platform',
-                                                                                'https://www.googleapis.com/auth/drive'])
+credentials_info = os.getenv("GCP_CREDENTIALS")
+credentials = service_account.Credentials.from_service_account_info(json.loads(credentials_info),
+                                                                    scopes=['https://www.googleapis.com/auth/devstorage.read_write',
+                                                                            'https://www.googleapis.com/auth/cloud-platform',
+                                                                            'https://www.googleapis.com/auth/drive'])
 
 # Load airport metadata
 airport_metdata = f"gs://airport-weather-data/airports-list-us.csv"

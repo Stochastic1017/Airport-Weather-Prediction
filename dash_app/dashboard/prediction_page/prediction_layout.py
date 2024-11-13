@@ -2,44 +2,51 @@
 import os
 import sys
 import json
-
-# Append current directory to system path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-import gcsfs
-import pandas as pd
+import dask.dataframe as dd
 from dash import dcc, html, callback, Input, Output
 import plotly.express as px
 from dotenv import load_dotenv
 from google.oauth2 import service_account
+import gcsfs
 
-# Loading environment variable with sensitive API keys
+# Append current directory to system path for imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variable with sensitive API keys
 load_dotenv()
 
-with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
-    credentials_info = json.loads(f.read())  # Read and parse the file contents
-    credentials = service_account.Credentials.from_service_account_info(credentials_info,
-                                                                        scopes=['https://www.googleapis.com/auth/devstorage.read_write',
-                                                                                'https://www.googleapis.com/auth/cloud-platform',
-                                                                                'https://www.googleapis.com/auth/drive'])
+credentials_info = os.getenv("GCP_CREDENTIALS")
+credentials = service_account.Credentials.from_service_account_info(json.loads(credentials_info),
+                                                                    scopes=['https://www.googleapis.com/auth/devstorage.read_write',
+                                                                            'https://www.googleapis.com/auth/cloud-platform',
+                                                                            'https://www.googleapis.com/auth/drive'])
     
 # Initialize Google Cloud Storage FileSystem
 fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
-# Load options for prediction from the CSV
-df_options = pd.read_csv("gs://airport-weather-data/options_for_prediction.csv", 
-                         storage_options={"token": credentials})
-df_airports = pd.read_csv("gs://airport-weather-data/airports-list-us.csv", 
-                          storage_options={"token": credentials})
+# Load options for prediction and airports data using Dask
+df_options = dd.read_csv(
+    "gs://airport-weather-data/options_for_prediction.csv",
+    storage_options={"token": credentials}
+)
+df_airports = dd.read_csv(
+    "gs://airport-weather-data/airports-list-us.csv",
+    storage_options={"token": credentials}
+)
 
 # Merge options for prediction
-df_merged = df_options.merge(df_airports[['AIRPORT_ID', 'LATITUDE', 'LONGITUDE']], 
-                             left_on='airport_id', 
-                             right_on='AIRPORT_ID',
-                             how='left')
+df_merged = df_options.merge(
+    df_airports[['AIRPORT_ID', 'LATITUDE', 'LONGITUDE']],
+    left_on='airport_id',
+    right_on='AIRPORT_ID',
+    how='left'
+).compute()  # Compute here because we need the full dataset for dropdown options
 
-# Dropdown options
-airline_options = [{"label": airline, "value": airline} for airline in df_merged['airline'].dropna().unique()]
+# Create dropdown options
+airline_options = [
+    {"label": airline, "value": airline}
+    for airline in df_merged['airline'].dropna().unique()
+]
 airport_options = [
     {
         "label": f"{row['airport_display_name']} ({row['airport_code']}, ID: {int(row['airport_id'])})",
@@ -289,19 +296,17 @@ random_forest_prediction_layout = html.Div(
     Input("destination-airport-input", "value")
 )
 def update_map(origin_airport, destination_airport):
-    # Retrieve airport coordinates from the dictionary
     origin_data = airport_coordinates.get(origin_airport)
     dest_data = airport_coordinates.get(destination_airport)
 
     if origin_data and dest_data:
-        # Set up map data for origin and destination
-        map_data = pd.DataFrame({
+        # Create map data as a dictionary
+        map_data = {
             'lat': [origin_data['latitude'], dest_data['latitude']],
             'lon': [origin_data['longitude'], dest_data['longitude']],
             'text': ['Origin Airport', 'Destination Airport']
-        })
-        
-        # Create the map figure with an arrowed line
+        }
+        # Create scatter mapbox plot
         fig = px.scatter_mapbox(
             map_data,
             lat='lat',
@@ -310,17 +315,6 @@ def update_map(origin_airport, destination_airport):
             zoom=4,
             mapbox_style="carto-positron"
         )
-        
-        # Add line trace with theme color
-        fig.add_trace(
-            px.line_mapbox(
-                map_data,
-                lat='lat',
-                lon='lon'
-            ).data[0].update(line=dict(color="#5c6bc0"))  # Set line color to match theme
-        )
-
         return fig
 
-    # Return an empty figure if either airport is missing
     return {}

@@ -6,6 +6,10 @@ dash-iconify==0.1.2
 dash-mantine-components==0.12.0
 dash-table==5.0.0
 dash-tools==1.12.0
+dask==2024.10.0
+dask-expr==1.1.16
+dask-glm==0.3.2
+dask-ml==2024.4.4
 python-dotenv==1.0.1
 gcsfs==2024.10.0
 numpy==1.26.4
