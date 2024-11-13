@@ -76,7 +76,7 @@ def create_airport_map_figure(mapbox_style, marker_size, marker_opacity, filtere
 def create_delay_plots(airport_id, year, month):
     try:
         file_path = f"gs://airport-weather-data/merged_data/{airport_id}_training_data.csv"
-        df = pd.read_csv(file_path, storage_options={"token": "flights-weather-project-33452f8b2c56.json"}, low_memory=False)
+        df = pd.read_csv(file_path, storage_options={"token": credentials}, low_memory=False)
         df["UTC_DATE"] = pd.to_datetime(df["UTC_DATE"], errors="coerce")
         df = df[(df["UTC_DATE"].dt.year == year) & (df["UTC_DATE"].dt.month == month)]
 

@@ -155,9 +155,10 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
             .loc[
                 (lambda df: (df["OriginState"] == origin_data["State"]) &
                             (df["OriginCity"] == origin_data["City"]) &
-                            (df["DayOfWeek"] == departure_time_utc.weekday()))
+                            (df["Day"]) == departure_time_utc.weekday())
             ][weather_features]
             .mean()
+            .compute()
             .to_dict()
             for path in fallback_paths
         ), {feature: 0 for feature in weather_features})

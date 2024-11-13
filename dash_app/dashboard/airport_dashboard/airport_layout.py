@@ -195,7 +195,7 @@ airport_dashboard_layout = html.Div([
                     dcc.Dropdown(
                         id='airport-plot-selector',
                         options=[
-                            {'label': "Departure vs Arrival Delay", 'value': "Delay Viz"},
+                            {'label': "Delays", 'value': "Delay Viz"},
                             {'label': "Cancellations", 'value': "Cancel Viz"}
                         ],
                         value="Delay Viz",

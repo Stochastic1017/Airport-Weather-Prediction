@@ -4,6 +4,7 @@ import sys
 import json
 import pandas as pd
 from dash import dcc, html, callback, Input, Output
+import plotly.graph_objects as go
 import plotly.express as px
 from dotenv import load_dotenv
 from google.oauth2 import service_account
@@ -258,36 +259,41 @@ random_forest_prediction_layout = html.Div(
                         "border": "1px solid #e0e0e0",
                         "borderRadius": "8px",
                         "backgroundColor": "#1e293b",
-                        "width": "100%"
+                        "width": "100%",
+                        "height": "100%",
                     }
                 ),
 
-                # Map Section with Loading Spinner
-                dcc.Loading(
-                    id="loading-map",
-                    type="cube",
-                    children=html.Div(
-                        dcc.Graph(
-                            id="flight-map",
-                            style={
-                                "width": "100%",
-                                "height": "500px",
-                                "border": "1px solid #e0e0e0",
-                                "borderRadius": "8px"
-                            }
-                        ),
+                # Map Section with height matching and reduced white space
+                html.Div(
+                    dcc.Graph(
+                        id="flight-map",
+                        config={"responsive": True},  # Ensure responsiveness
                         style={
-                            "padding": "20px",
-                            "border": "1px solid #e0e0e0",
-                            "borderRadius": "8px",
-                            "boxShadow": "0 4px 8px rgba(0,0,0,0.1)",
-                            "backgroundColor": "#1e293b",
                             "width": "100%",
-                            "marginTop": "20px",
-                            "textAlign": "center"  # Center-align the map in the container
+                            "height": "100%",  # Fill container height
+                            "minHeight": "600px",  # Match the input section height
+                            "borderRadius": "8px",  # Rounded corners
+                            "margin": "0",  # Remove extra margins
+                            "padding": "0"  # Remove extra padding
                         }
-                    )
+                    ),
+                    style={
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "alignItems": "center",
+                        "justifyContent": "center",
+                        "padding": "0",  # Remove padding
+                        "margin": "10px",  # Small margin for clean spacing
+                        "border": "none",  # Remove any visible border
+                        "borderRadius": "8px",  # Match rounded map style
+                        "backgroundColor": "transparent",  # No background color
+                        "width": "100%",
+                        "height": "100%",  # Match input section height
+                        "boxSizing": "border-box"  # Prevent additional padding affecting size
+                    }
                 )
+
             ]
         ),
 
@@ -313,7 +319,6 @@ random_forest_prediction_layout = html.Div(
     ]
 )
 
-
 @callback(
     Output("flight-map", "figure"),
     Input("origin-airport-input", "value"),
@@ -324,13 +329,14 @@ def update_map(origin_airport, destination_airport):
     dest_data = airport_coordinates.get(destination_airport)
 
     if origin_data and dest_data:
-        # Create map data as a dictionary
+        # Create map data for points
         map_data = {
             'lat': [origin_data['latitude'], dest_data['latitude']],
             'lon': [origin_data['longitude'], dest_data['longitude']],
             'text': ['Origin Airport', 'Destination Airport']
         }
-        # Create scatter mapbox plot
+
+        # Create scatter mapbox for points
         fig = px.scatter_mapbox(
             map_data,
             lat='lat',
@@ -339,6 +345,25 @@ def update_map(origin_airport, destination_airport):
             zoom=4,
             mapbox_style="carto-positron"
         )
+
+        # Add a line connecting the two points
+        fig.add_trace(
+            go.Scattermapbox(
+                lat=[origin_data['latitude'], dest_data['latitude']],
+                lon=[origin_data['longitude'], dest_data['longitude']],
+                mode="lines",
+                line=dict(width=2, color="blue"),
+                showlegend=False  # No legend for the line
+            )
+        )
+
         return fig
 
-    return {}
+    # Return an empty map if one or both inputs are missing
+    return px.scatter_mapbox(
+        pd.DataFrame(columns=["lat", "lon"]),
+        lat="lat",
+        lon="lon",
+        zoom=3,
+        mapbox_style="carto-positron"
+    )
