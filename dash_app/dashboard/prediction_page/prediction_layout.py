@@ -2,17 +2,16 @@
 import os
 import sys
 import json
-import dask.dataframe as dd
+import pandas as pd
 from dash import dcc, html, callback, Input, Output
 import plotly.express as px
 from dotenv import load_dotenv
 from google.oauth2 import service_account
-import gcsfs
 
 # Append current directory to system path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Load environment variable with sensitive API keys
+# Load environment variables with sensitive API keys
 load_dotenv()
 
 credentials_info = os.getenv("GCP_CREDENTIALS")
@@ -20,11 +19,8 @@ credentials = service_account.Credentials.from_service_account_info(json.loads(c
                                                                     scopes=['https://www.googleapis.com/auth/devstorage.read_write',
                                                                             'https://www.googleapis.com/auth/cloud-platform',
                                                                             'https://www.googleapis.com/auth/drive'])
-    
-# Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
-# Load the CSV using Dask with explicit dtypes
+# Load the CSV using Pandas with explicit dtypes
 dtypes_options = {
     "airport_id": "float64",  # Keep as float64 to handle NaN values
 }
@@ -35,11 +31,18 @@ dtypes_airports = {
     "LONGITUDE": "float64",  # Longitude as float
 }
 
-df_options = dd.read_csv(
+# Load CSV data into Pandas DataFrames
+df_options = pd.read_csv(
     "gs://airport-weather-data/options_for_prediction.csv",
     dtype=dtypes_options,
     storage_options={"token": credentials}
-).persist()
+)
+
+df_airports = pd.read_csv(
+    "gs://airport-weather-data/airports-list-us.csv",
+    dtype=dtypes_airports,
+    storage_options={"token": credentials}
+)
 
 # Handle missing values
 # Option 1: Fill NaN with placeholder for airport_id
@@ -51,22 +54,17 @@ df_options = df_options.dropna(subset=["airport_id"])
 # Ensure airport_id is integer after handling NaN
 df_options["airport_id"] = df_options["airport_id"].astype("int64")
 
-df_airports = dd.read_csv(
-    "gs://airport-weather-data/airports-list-us.csv",
-    dtype=dtypes_airports,
-    storage_options={"token": credentials}
-).persist()
-
 # Select required columns from df_airports
 df_airports_subset = df_airports[['AIRPORT_ID', 'LATITUDE', 'LONGITUDE']]
 
 # Merge options for prediction with airport metadata
-df_merged = df_options.merge(
+df_merged = pd.merge(
+    df_options,
     df_airports_subset,
     left_on='airport_id',
     right_on='AIRPORT_ID',
     how='left'
-).compute()  # Compute when a full dataset is required
+)
 
 # Create dropdown options
 airline_options = [

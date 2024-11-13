@@ -7,10 +7,9 @@ import json
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import re
-import gcsfs
 import pytz
 import requests
-import dask.dataframe as dd
+import pandas as pd
 from requests.auth import HTTPBasicAuth
 from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime
@@ -27,9 +26,6 @@ credentials = service_account.Credentials.from_service_account_info(json.loads(c
                                                                     scopes=['https://www.googleapis.com/auth/devstorage.read_write',
                                                                             'https://www.googleapis.com/auth/cloud-platform',
                                                                             'https://www.googleapis.com/auth/drive'])
-
-# Initialize Google Cloud Storage FileSystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 
 # Weather-related features
 weather_features = [
@@ -93,14 +89,13 @@ def get_weather_data_for_prediction(latitude, longitude, timestamp, username, pa
     return None
 
 def load_fallback_summary(fallback_files, origin_state, time_key=None):
-    """Load fallback weather data from state-level aggregates using Dask."""
+    """Load fallback weather data from state-level aggregates using Pandas."""
     for file_name in fallback_files:
         try:
-            fallback_data = dd.read_csv(f"gs://airport-weather-data/aggregate/{file_name}", storage_options={"token": credentials})
+            fallback_data = pd.read_csv(f"gs://airport-weather-data/aggregate/{file_name}", storage_options={"token": credentials})
             filtered_data = fallback_data[fallback_data["OriginState"] == origin_state]
             if time_key:
                 filtered_data = filtered_data[filtered_data[time_key] == time_key]
-            filtered_data = filtered_data.compute()  # Compute only at the last step
             if not filtered_data.empty:
                 print(f"Loaded fallback data from {file_name}")
                 return filtered_data.iloc[0][weather_features].to_dict()
@@ -112,7 +107,7 @@ def load_fallback_summary(fallback_files, origin_state, time_key=None):
 
 def get_weather_estimates(origin_airport_id, departure_time, closest_weather_airport, 
                           max_distance=100, n_nearest=5, fallback_files=None, origin_state=None):
-    """Estimate weather data from nearby stations using Dask."""
+    """Estimate weather data from nearby stations using Pandas."""
     # Step 1: Find nearest stations
     nearest_stations = closest_weather_airport[
         closest_weather_airport['AIRPORT_ID'] == int(origin_airport_id)
@@ -124,7 +119,7 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
     # Step 2: Filter stations within max_distance
     nearest_stations = nearest_stations[
         nearest_stations['DISTANCE_KM'] <= max_distance
-    ].head(n_nearest).compute()
+    ].nsmallest(n_nearest, 'DISTANCE_KM')
 
     # Step 3: Initialize feature sums and counts
     weather_sums = {feature: 0.0 for feature in weather_features}
@@ -136,24 +131,23 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
         file_path = f'gs://airport-weather-data/ncei-lcd/{station_id}.csv'
 
         try:
-            weather_df = dd.read_csv(file_path, storage_options={"token": credentials})
-            weather_df['UTC_DATE'] = dd.to_datetime(weather_df['UTC_DATE'])
+            weather_df = pd.read_csv(file_path, storage_options={"token": credentials})
+            weather_df['UTC_DATE'] = pd.to_datetime(weather_df['UTC_DATE'])
             
             # Filter for the specific day
             daily_weather = weather_df[weather_df['UTC_DATE'].dt.date == departure_time.date()]
 
-            # Compute the daily weather data (still lazily evaluated so far)
-            if daily_weather.empty().compute():  # Using Dask's `.empty()` function
+            if daily_weather.empty:
                 continue
 
             # Find the closest time index to departure time
             daily_weather['time_diff'] = abs(daily_weather['UTC_DATE'] - departure_time)
-            closest_weather = daily_weather.nsmallest(1, 'time_diff').compute()
+            closest_weather = daily_weather.nsmallest(1, 'time_diff')
 
             # Aggregate feature values
             for feature in weather_features:
                 value = closest_weather[feature].values[0]
-                if not dd.isna(value):  # Use Dask's `isna()` for null checks
+                if pd.notna(value):  # Pandas null check
                     weather_sums[feature] += value
                     valid_counts[feature] += 1
         except FileNotFoundError:
@@ -178,72 +172,27 @@ def fetch_complete_weather_data(latitude, longitude, timestamp, username, passwo
                               origin_airport_id, departure_time, closest_weather_airport, 
                               origin_state, fallback_files):
     """Fetch weather data with fallbacks. Guarantees non-None return values."""
-    
-    # Define default weather data structure
-    default_weather = {
-        "DryBulbTemperature": 0,
-        "WindSpeed": 0,
-        "WindDirection": 0,
-        "DewPointTemperature": 0,
-        "RelativeHumidity": 0,
-        "Visibility": 0,
-        "StationPressure": 0
-    }
-    
+    default_weather = {feature: 0 for feature in weather_features}
     try:
-        # Step 1: Attempt API data
-        weather_data = get_weather_data_for_prediction(
-            latitude=latitude,
-            longitude=longitude,
-            timestamp=timestamp,
-            username=username,
-            password=password
-        )
+        weather_data = get_weather_data_for_prediction(latitude, longitude, timestamp, username, password)
 
-        # Ensure we have all keys and no None values from API response
         if weather_data:
-            weather_data = {
-                k: (v if v is not None else default_weather[k]) 
-                for k, v in default_weather.items()
-            }
+            weather_data = {k: weather_data.get(k, default_weather[k]) for k in default_weather}
 
-        # Step 2: Fallback to nearest weather stations if API fails or is incomplete
         if not weather_data or any(v is None for v in weather_data.values()):
             print("Using nearest weather station fallback...")
-            weather_data = get_weather_estimates(
-                origin_airport_id=origin_airport_id,
-                departure_time=departure_time,
-                closest_weather_airport=closest_weather_airport,
-                max_distance=100,
-                n_nearest=5,
-                fallback_files=fallback_files,
-                origin_state=origin_state
-            )
+            weather_data = get_weather_estimates(origin_airport_id, departure_time, closest_weather_airport, max_distance=100, n_nearest=5, fallback_files=fallback_files, origin_state=origin_state)
             
-            # Ensure all keys exist and no None values from station data
             if weather_data:
-                weather_data = {
-                    k: (weather_data.get(k, default_weather[k]) if weather_data.get(k) is not None else default_weather[k])
-                    for k in default_weather.keys()
-                }
+                weather_data = {k: weather_data.get(k, default_weather[k]) for k in default_weather}
 
-        # Step 3: Final fallback to state-level aggregated data
         if not weather_data or any(v is None for v in weather_data.values()):
             print("Using state-level aggregate fallback...")
-            weather_data = load_fallback_summary(
-                fallback_files=fallback_files,
-                origin_state=origin_state,
-                time_key=departure_time.strftime('%H:%M')
-            )
+            weather_data = load_fallback_summary(fallback_files, origin_state=origin_state, time_key=departure_time.strftime('%H:%M'))
             
-            # Ensure all keys exist and no None values from state-level data
             if weather_data:
-                weather_data = {
-                    k: (weather_data.get(k, default_weather[k]) if weather_data.get(k) is not None else default_weather[k])
-                    for k in default_weather.keys()
-                }
+                weather_data = {k: weather_data.get(k, default_weather[k]) for k in default_weather}
 
-        # Final safety net: if all else fails, return default values
         if not weather_data or any(v is None for v in weather_data.values()):
             print("All fallbacks failed; using default values.")
             weather_data = default_weather.copy()
@@ -252,8 +201,7 @@ def fetch_complete_weather_data(latitude, longitude, timestamp, username, passwo
         print(f"Unexpected error in weather data fetching: {e}")
         weather_data = default_weather.copy()
 
-    # Final validation to absolutely guarantee non-None values
-    return {k: (v if v is not None else 0) for k, v in weather_data.items()}
+    return weather_data
 
 def convert_to_utc(local_time_str, date_str, lat, lon):
     """Convert local time to UTC using TimezoneFinder."""
@@ -263,11 +211,9 @@ def convert_to_utc(local_time_str, date_str, lat, lon):
     local_tz = pytz.timezone(local_tz_name)
     return local_tz.localize(local_time).astimezone(pytz.UTC)
 
-
 def validate_time_format(time_str):
     """Validate time format as HH:MM."""
     return bool(re.match(r'^[0-2]?\d:[0-5]\d$', time_str))
-
 
 def create_prediction_table(arrival_delay, departure_delay, taxi_delay, total_delay, cancel_msg):
     """Create an HTML table for prediction results."""

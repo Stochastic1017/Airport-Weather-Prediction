@@ -1,14 +1,8 @@
 
 import os
 import sys
-
-# Add current directory to system path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 import json
 import pickle
-import gcsfs
-import dask.dataframe as dd
 import pandas as pd
 from dash import Output, Input, State, callback
 from dotenv import load_dotenv
@@ -31,20 +25,6 @@ credentials = service_account.Credentials.from_service_account_info(json.loads(c
                                                                             'https://www.googleapis.com/auth/cloud-platform',
                                                                             'https://www.googleapis.com/auth/drive'])
 
-# Initialize GCS filesystem
-fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
-
-# Cache models using lru_cache
-@lru_cache(maxsize=1)
-def load_delay_model():
-    with fs.open("gs://airport-weather-data/models/random_forest_regressor.pkl", "rb") as f:
-        return pickle.load(f)
-
-@lru_cache(maxsize=1)
-def load_cancel_model():
-    with fs.open("gs://airport-weather-data/models/random_forest_classifier.pkl", "rb") as f:
-        return pickle.load(f)
-
 # Explicitly define dtypes for problematic columns
 dtypes_airport_metadata = {
     "WEATHER_STATION_ID": "object",  # To handle IDs like 'A0705300346'
@@ -56,18 +36,18 @@ dtypes_closest_weather_airport = {
     "airport_id": "int64",           # Match the dtype with AIRPORT_ID
 }
 
-# Load large datasets using Dask with explicit dtypes
-df_airport_metadata = dd.read_csv(
+# Load datasets using Pandas
+df_airport_metadata = pd.read_csv(
     "gs://airport-weather-data/airports-list-us.csv",
     dtype=dtypes_airport_metadata,
     storage_options={"token": credentials}
-).persist()
+)
 
-closest_weather_airport = dd.read_csv(
+closest_weather_airport = pd.read_csv(
     "gs://airport-weather-data/closest_airport_weather.csv",
     dtype=dtypes_closest_weather_airport,
     storage_options={"token": credentials}
-).persist()
+)
 
 # Weather features
 weather_features = [
@@ -84,6 +64,17 @@ fallback_paths = [
     "gs://airport-weather-data/aggregate/airport_weather_summary_by_state_city.csv",
     "gs://airport-weather-data/aggregate/airport_weather_summary_by_state.csv"
 ]
+
+# Cache models using lru_cache
+@lru_cache(maxsize=1)
+def load_delay_model():
+    with open("gs://airport-weather-data/models/random_forest_regressor.pkl", "rb") as f:
+        return pickle.load(f)
+
+@lru_cache(maxsize=1)
+def load_cancel_model():
+    with open("gs://airport-weather-data/models/random_forest_classifier.pkl", "rb") as f:
+        return pickle.load(f)
 
 @callback(
     Output("prediction-output", "children"),
@@ -132,7 +123,7 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
     metadata = df_airport_metadata[
         (df_airport_metadata['AIRPORT_ID'] == origin_airport) |
         (df_airport_metadata['AIRPORT_ID'] == destination_airport)
-    ].compute()
+    ]
     origin_data = metadata[metadata['AIRPORT_ID'] == origin_airport].iloc[0]
     dest_data = metadata[metadata['AIRPORT_ID'] == destination_airport].iloc[0]
 
@@ -154,20 +145,19 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
     except Exception:
         weather_forecasts = get_weather_estimates(
             origin_airport_id=origin_airport, departure_time=departure_time_utc,
-            closest_weather_airport=closest_weather_airport.compute(), max_distance=100, n_nearest=5
+            closest_weather_airport=closest_weather_airport, max_distance=100, n_nearest=5
         )
 
     # Use fallback files
     if not weather_forecasts:
         weather_forecasts = next((
-            dd.read_csv(path, storage_options={"token": credentials})
+            pd.read_csv(path, storage_options={"token": credentials})
             .loc[
                 (lambda df: (df["OriginState"] == origin_data["State"]) &
                             (df["OriginCity"] == origin_data["City"]) &
                             (df["DayOfWeek"] == departure_time_utc.weekday()))
             ][weather_features]
             .mean()
-            .compute()
             .to_dict()
             for path in fallback_paths
         ), {feature: 0 for feature in weather_features})
