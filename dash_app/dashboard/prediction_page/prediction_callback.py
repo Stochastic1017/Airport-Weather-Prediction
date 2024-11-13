@@ -45,11 +45,29 @@ def load_cancel_model():
     with fs.open("gs://airport-weather-data/models/random_forest_classifier.pkl", "rb") as f:
         return pickle.load(f)
 
-# Load large datasets using Dask
-df_airport_metadata = dd.read_csv("gs://airport-weather-data/airports-list-us.csv", 
-                                   storage_options={"token": credentials}).persist()
-closest_weather_airport = dd.read_csv("gs://airport-weather-data/closest_airport_weather.csv", 
-                                       storage_options={"token": credentials}).persist()
+# Explicitly define dtypes for problematic columns
+dtypes_airport_metadata = {
+    "WEATHER_STATION_ID": "object",  # To handle IDs like 'A0705300346'
+    "AIRPORT_ID": "int64",          # Assuming it should be an integer
+}
+
+dtypes_closest_weather_airport = {
+    "WEATHER_STATION_ID": "object",  # Same for this dataset
+    "airport_id": "int64",           # Match the dtype with AIRPORT_ID
+}
+
+# Load large datasets using Dask with explicit dtypes
+df_airport_metadata = dd.read_csv(
+    "gs://airport-weather-data/airports-list-us.csv",
+    dtype=dtypes_airport_metadata,
+    storage_options={"token": credentials}
+).persist()
+
+closest_weather_airport = dd.read_csv(
+    "gs://airport-weather-data/closest_airport_weather.csv",
+    dtype=dtypes_closest_weather_airport,
+    storage_options={"token": credentials}
+).persist()
 
 # Weather features
 weather_features = [

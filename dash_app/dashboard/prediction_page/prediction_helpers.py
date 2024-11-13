@@ -22,16 +22,11 @@ from google.oauth2 import service_account
 # Load environment variables
 load_dotenv()
 
-with open('/etc/secrets/GCP_CREDENTIALS', 'r') as f:
-    credentials_info = json.loads(f.read())
-    credentials = service_account.Credentials.from_service_account_info(
-        credentials_info,
-        scopes=[
-            'https://www.googleapis.com/auth/devstorage.read_write',
-            'https://www.googleapis.com/auth/cloud-platform',
-            'https://www.googleapis.com/auth/drive'
-        ]
-    )
+credentials_info = os.getenv("GCP_CREDENTIALS")
+credentials = service_account.Credentials.from_service_account_info(json.loads(credentials_info),
+                                                                    scopes=['https://www.googleapis.com/auth/devstorage.read_write',
+                                                                            'https://www.googleapis.com/auth/cloud-platform',
+                                                                            'https://www.googleapis.com/auth/drive'])
 
 # Initialize Google Cloud Storage FileSystem
 fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
@@ -180,46 +175,85 @@ def get_weather_estimates(origin_airport_id, departure_time, closest_weather_air
     return station_weather_data
 
 def fetch_complete_weather_data(latitude, longitude, timestamp, username, password, 
-                                origin_airport_id, departure_time, closest_weather_airport, 
-                                origin_state, fallback_files):
-    """Fetch weather data with fallbacks."""
-    # Step 1: Attempt API data
-    weather_data = get_weather_data_for_prediction(
-        latitude=latitude,
-        longitude=longitude,
-        timestamp=timestamp,
-        username=username,
-        password=password
-    )
-
-    # Step 2: Fallback to nearest weather stations if API fails or is incomplete
-    if weather_data is None or any(value is None for value in weather_data.values()):
-        print("Using nearest weather station fallback...")
-        weather_data = get_weather_estimates(
-            origin_airport_id=origin_airport_id,
-            departure_time=departure_time,
-            closest_weather_airport=closest_weather_airport,
-            max_distance=100,  # Maximum distance to consider in kilometers
-            n_nearest=5,  # Number of nearest stations to consider
-            fallback_files=fallback_files,
-            origin_state=origin_state
+                              origin_airport_id, departure_time, closest_weather_airport, 
+                              origin_state, fallback_files):
+    """Fetch weather data with fallbacks. Guarantees non-None return values."""
+    
+    # Define default weather data structure
+    default_weather = {
+        "DryBulbTemperature": 0,
+        "WindSpeed": 0,
+        "WindDirection": 0,
+        "DewPointTemperature": 0,
+        "RelativeHumidity": 0,
+        "Visibility": 0,
+        "StationPressure": 0
+    }
+    
+    try:
+        # Step 1: Attempt API data
+        weather_data = get_weather_data_for_prediction(
+            latitude=latitude,
+            longitude=longitude,
+            timestamp=timestamp,
+            username=username,
+            password=password
         )
 
-    # Step 3: Final fallback to state-level aggregated data if nearest station fails
-    if weather_data is None or all(value is None for value in weather_data.values()):
-        print("Using state-level aggregate fallback...")
-        weather_data = load_fallback_summary(
-            fallback_files=fallback_files,
-            origin_state=origin_state,
-            time_key=departure_time.strftime('%H:%M')
-        )
+        # Ensure we have all keys and no None values from API response
+        if weather_data:
+            weather_data = {
+                k: (v if v is not None else default_weather[k]) 
+                for k, v in default_weather.items()
+            }
 
-    # Step 4: Ensure no `None` values remain in the final data
-    if any(value is None for value in weather_data.values()):
-        print("Final fallback failed; defaulting missing values to 0.")
-        weather_data = {key: (value if value is not None else 0) for key, value in weather_data.items()}
+        # Step 2: Fallback to nearest weather stations if API fails or is incomplete
+        if not weather_data or any(v is None for v in weather_data.values()):
+            print("Using nearest weather station fallback...")
+            weather_data = get_weather_estimates(
+                origin_airport_id=origin_airport_id,
+                departure_time=departure_time,
+                closest_weather_airport=closest_weather_airport,
+                max_distance=100,
+                n_nearest=5,
+                fallback_files=fallback_files,
+                origin_state=origin_state
+            )
+            
+            # Ensure all keys exist and no None values from station data
+            if weather_data:
+                weather_data = {
+                    k: (weather_data.get(k, default_weather[k]) if weather_data.get(k) is not None else default_weather[k])
+                    for k in default_weather.keys()
+                }
 
-    return weather_data
+        # Step 3: Final fallback to state-level aggregated data
+        if not weather_data or any(v is None for v in weather_data.values()):
+            print("Using state-level aggregate fallback...")
+            weather_data = load_fallback_summary(
+                fallback_files=fallback_files,
+                origin_state=origin_state,
+                time_key=departure_time.strftime('%H:%M')
+            )
+            
+            # Ensure all keys exist and no None values from state-level data
+            if weather_data:
+                weather_data = {
+                    k: (weather_data.get(k, default_weather[k]) if weather_data.get(k) is not None else default_weather[k])
+                    for k in default_weather.keys()
+                }
+
+        # Final safety net: if all else fails, return default values
+        if not weather_data or any(v is None for v in weather_data.values()):
+            print("All fallbacks failed; using default values.")
+            weather_data = default_weather.copy()
+
+    except Exception as e:
+        print(f"Unexpected error in weather data fetching: {e}")
+        weather_data = default_weather.copy()
+
+    # Final validation to absolutely guarantee non-None values
+    return {k: (v if v is not None else 0) for k, v in weather_data.items()}
 
 def convert_to_utc(local_time_str, date_str, lat, lon):
     """Convert local time to UTC using TimezoneFinder."""
