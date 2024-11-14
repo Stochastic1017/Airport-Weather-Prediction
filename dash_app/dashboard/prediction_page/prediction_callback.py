@@ -6,6 +6,8 @@ import pickle
 import pandas as pd
 from dash import Output, Input, State, callback
 from dotenv import load_dotenv
+import gcsfs
+from datetime import datetime, timedelta
 from google.oauth2 import service_account
 from functools import lru_cache
 from .prediction_helpers import (haversine, get_weather_data_for_prediction, 
@@ -25,6 +27,8 @@ credentials = service_account.Credentials.from_service_account_info(json.loads(c
                                                                             'https://www.googleapis.com/auth/cloud-platform',
                                                                             'https://www.googleapis.com/auth/drive'])
 
+# Initialize GCS filesystem
+fs = gcsfs.GCSFileSystem(project='Flights-Weather-Project', token=credentials)
 # Explicitly define dtypes for problematic columns
 dtypes_airport_metadata = {
     "WEATHER_STATION_ID": "object",  # To handle IDs like 'A0705300346'
@@ -68,12 +72,12 @@ fallback_paths = [
 # Cache models using lru_cache
 @lru_cache(maxsize=1)
 def load_delay_model():
-    with open("gs://airport-weather-data/models/random_forest_regressor.pkl", "rb") as f:
+    with fs.open("gs://airport-weather-data/models/random_forest_regressor.pkl", "rb") as f:
         return pickle.load(f)
 
 @lru_cache(maxsize=1)
 def load_cancel_model():
-    with open("gs://airport-weather-data/models/random_forest_classifier.pkl", "rb") as f:
+    with fs.open("gs://airport-weather-data/models/random_forest_classifier.pkl", "rb") as f:
         return pickle.load(f)
 
 @callback(
@@ -92,8 +96,10 @@ def load_cancel_model():
     State("arrival-time-input", "value"),
     State("date-input", "date"),
 )
+
 def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport, 
                          departure_time, arrival_time, date):
+
     if not n_clicks:
         return "", {}, {}, {}, {}, {}, {}
 
@@ -113,8 +119,10 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
 
     if departure_time and not validate_time_format(departure_time):
         errors["departure-time-input"] = {"border": "2px solid red"}
+        print('In departure')
     if arrival_time and not validate_time_format(arrival_time):
         errors["arrival-time-input"] = {"border": "2px solid red"}
+        print('In arrival')
 
     if errors:
         return "Please fill all fields correctly.", *[errors.get(i, {}) for i in required_inputs]
@@ -134,6 +142,17 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
     # Convert times to UTC
     departure_time_utc = convert_to_utc(departure_time, date, origin_latitude, origin_longitude)
     arrival_time_utc = convert_to_utc(arrival_time, date, dest_latitude, dest_longitude)
+
+    # Check if arrival_time is on the next day
+    departure_local_time = datetime.strptime(f"{date} {departure_time}", "%Y-%m-%d %H:%M")
+    arrival_local_time = datetime.strptime(f"{date} {arrival_time}", "%Y-%m-%d %H:%M")
+
+    if arrival_local_time <= departure_local_time:  # Arrival is the next day
+        arrival_date = (datetime.strptime(date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+    else:
+        arrival_date = date
+
+    arrival_time_utc = convert_to_utc(arrival_time, arrival_date, dest_latitude, dest_longitude)
 
     # Fetch weather data
     weather_forecasts = None
@@ -158,7 +177,6 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
                             (df["Day"]) == departure_time_utc.weekday())
             ][weather_features]
             .mean()
-            .compute()
             .to_dict()
             for path in fallback_paths
         ), {feature: 0 for feature in weather_features})

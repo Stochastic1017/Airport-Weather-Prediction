@@ -213,21 +213,60 @@ def convert_to_utc(local_time_str, date_str, lat, lon):
 
 def validate_time_format(time_str):
     """Validate time format as HH:MM."""
-    return bool(re.match(r'^[0-2]?\d:[0-5]\d$', time_str))
+    return bool(re.match(r'^(2[0-3]|1\d|0?\d):[0-5]\d$', time_str))
 
 def create_prediction_table(arrival_delay, departure_delay, taxi_delay, total_delay, cancel_msg):
-    """Create an HTML table for prediction results."""
+    """Create an HTML table for prediction results with custom tooltips."""
     rows = [
-        ("Arrival Delay", f"{arrival_delay:.2f}"),
-        ("Departure Delay", f"{departure_delay:.2f}"),
-        ("Taxi Delay", f"{taxi_delay:.2f}"),
-        ("Total Expected Delay", f"{total_delay:.2f}")
+        (
+            "Arrival Delay",
+            "The estimated delay in arrival time compared to the scheduled arrival time. Under the assumption that everything else is on time.",
+            f"{arrival_delay:.2f}"
+        ),
+        (
+            "Departure Delay",
+            "The estimated delay in departure time compared to the scheduled departure time. Under the assumption that everything else is on time.",
+            f"{departure_delay:.2f}"
+        ),
+        (
+            "Taxi Delay",
+            "The estimated time spent taxiing on the ground, either after landing or before takeoff. Under the assumption that everything else is on time.",
+            f"{taxi_delay:.2f}"
+        ),
+        (
+            "Net Flight Delay",
+            "The difference between the actual elapsed time and the scheduled elapsed time of the flight. Under the assumption that everything else is on time.",
+            f"{total_delay:.2f}"
+        )
     ]
+    
+    # Generate table rows with tooltips
     table_rows = [
-        html.Tr([html.Td(label), html.Td(value)], style={"background-color": "#f2f2f2" if i % 2 == 0 else "#ffffff"})
-        for i, (label, value) in enumerate(rows)
+        html.Tr(
+            [
+                html.Td(
+                    html.Div(
+                        [
+                            html.Span(label, className="tooltip-label"),
+                            html.Div(
+                                tooltip_text,
+                                className="tooltip-text"
+                            )
+                        ],
+                        className="tooltip-container"
+                    )
+                ),
+                html.Td(value)
+            ],
+            style={"background-color": "#f2f2f2" if i % 2 == 0 else "#ffffff"}
+        )
+        for i, (label, tooltip_text, value) in enumerate(rows)
     ]
+    
+    # Style for cancellation likelihood
     cancel_style = {"background-color": "#f2f2f2" if cancel_msg == "No" else "#ffcccb"}
+    
+    # Return the complete table with tooltip-enabled rows
     return html.Div([
         html.Table(
             [html.Tr([html.Th("Delay Type"), html.Th("Expected Delay (Minutes)")])] + table_rows,
