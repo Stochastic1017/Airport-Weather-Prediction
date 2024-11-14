@@ -109,17 +109,18 @@ def create_delay_plots(airport_id, year, month):
         delay_types = [
             {"column": "ArrivalDelay", "label": "Arrival Delay", "color": "#1f77b4"},
             {"column": "DepartureDelay", "label": "Departure Delay", "color": "#ff7f0e"},
-            {"column": "TotalFlightDelay", "label": "Total Flight Delay", "color": "#2ca02c"},
-            {"column": "TaxiDelay", "label": "Taxi Delay", "color": "#d62728"}
+            {"column": "TaxiDelay", "label": "Taxi Delay", "color": "#d62728"},
+            {"column": "TotalFlightDelay", "label": "Total Flight Delay", "color": "#2ca02c"}
+            
         ]
 
         fig = make_subplots(
             rows=4, cols=4,
             vertical_spacing=0.08, horizontal_spacing=0.03,
-            subplot_titles=["Arrival Distribution", "Departure Distribution", "Total Flight Distribution", "Taxi Distribution",
-                            "Arrival by Day", "Departure by Day", "Total Flight by Day", "Taxi by Day",
-                            "Arrival by Airline", "Departure by Airline", "Total Flight by Airline", "Taxi by Airline",
-                            "Arrival by Destination", "Departure by Destination", "Total Flight by Destination", "Taxi by Destination"]
+            subplot_titles=["Arrival Distribution", "Departure Distribution", "Taxi Distribution", "Net Flight Distribution",
+                            "Arrival by Day", "Departure by Day", "Taxi by Day", "Net Flight by Day", 
+                            "Arrival by Airline", "Departure by Airline", "Taxi by Airline", "Net Flight by Airline", 
+                            "Arrival by Destination", "Departure by Destination",  "Taxi by Destination", "Net Flight by Destination"]
         )
 
         for idx, dt in enumerate(delay_types):
