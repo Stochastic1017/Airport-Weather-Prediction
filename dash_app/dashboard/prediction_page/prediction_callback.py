@@ -119,10 +119,9 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
 
     if departure_time and not validate_time_format(departure_time):
         errors["departure-time-input"] = {"border": "2px solid red"}
-        print('In departure')
+        
     if arrival_time and not validate_time_format(arrival_time):
         errors["arrival-time-input"] = {"border": "2px solid red"}
-        print('In arrival')
 
     if errors:
         return "Please fill all fields correctly.", *[errors.get(i, {}) for i in required_inputs]
@@ -205,8 +204,7 @@ def predict_flight_delay(n_clicks, airline, origin_airport, destination_airport,
     cancel_model = load_cancel_model()
     delay_prediction = delay_models.predict(feature_df)[0]
     arrival_delay, departure_delay, taxi_delay, total_delay = map(lambda x: max(0, x), delay_prediction)
-    cancel_prediction = cancel_model.predict(feature_df)[0]
-    cancel_msg = "Yes" if cancel_prediction == 1 else "No"
+    cancel_msg = round(cancel_model.predict_proba(feature_df)[0][1] * 100)
 
     # Create results table
     delay_table = create_prediction_table(arrival_delay, departure_delay, taxi_delay, total_delay, cancel_msg)

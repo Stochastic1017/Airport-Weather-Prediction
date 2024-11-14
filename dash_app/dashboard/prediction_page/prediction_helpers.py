@@ -264,8 +264,8 @@ def create_prediction_table(arrival_delay, departure_delay, taxi_delay, total_de
     ]
     
     # Style for cancellation likelihood
-    cancel_style = {"background-color": "#f2f2f2" if cancel_msg == "No" else "#ffcccb"}
-    
+    cancel_style = {"background-color": "#f2f2f2" if cancel_msg < 50 else "#ffcccb"}
+
     # Return the complete table with tooltip-enabled rows
     return html.Div([
         html.Table(
@@ -274,6 +274,6 @@ def create_prediction_table(arrival_delay, departure_delay, taxi_delay, total_de
         ),
         html.Div([
             html.Div("Cancellation Likelihood", style={"font-weight": "bold", "text-align": "center", "width": "50%"}),
-            html.Div(cancel_msg, style={"width": "50%", **cancel_style, "text-align": "center"})
+            html.Div(f"{cancel_msg}%", style={"width": "50%", **cancel_style, "text-align": "center", "display": "flex", "justify-content": "center", "align-items": "center"})
         ], style={"display": "flex", "margin-top": "20px"})
     ])
