@@ -8,7 +8,7 @@ The holiday season (November to January) is among the busiest for air travel. Th
 
 **TRANSTAT BTS Airport Data**
 
-This [script](https://github.com/Stochastic1017/Airport-Weather-Prediction/blob/e1dc2db7893b3359aed84fd58ac42fa320c3a421/scraping/transtat-bts/scrape_raw_airport_data.py) automates the download of *23 GB* of raw airport data from January 2018 to August 2024. Essential cleaning steps include: 
+The script [scrape_raw_airport_data.py](https://github.com/Stochastic1017/Airport-Weather-Prediction/blob/e1dc2db7893b3359aed84fd58ac42fa320c3a421/scraping/transtat-bts/scrape_raw_airport_data.py) automates the download of *23 GB* of raw airport data from January 2018 to August 2024. Essential cleaning steps include: 
 
 * Retaining data from January to December. 
 * Removing duplicate *AIRPORT_ID* and saving each airport's data separately. 
@@ -17,7 +17,7 @@ This [script](https://github.com/Stochastic1017/Airport-Weather-Prediction/blob/
 
 **NCEI LCD Weather Data**
 
-This [script](https://github.com/Stochastic1017/Airport-Weather-Prediction/blob/e1dc2db7893b3359aed84fd58ac42fa320c3a421/scraping/ncei-lcd/scrape_climatology_access.py) automates the download of \texttt{30 GB} weather data from 2018-2024. Metadata for each station is fetched using [reverse geocoding](https://github.com/thampiman/reverse-geocoder). Key cleaning steps include: 
+This [scrape_climatology_access.py](https://github.com/Stochastic1017/Airport-Weather-Prediction/blob/e1dc2db7893b3359aed84fd58ac42fa320c3a421/scraping/ncei-lcd/scrape_climatology_access.py) automates the download of \texttt{30 GB} weather data from 2018-2024. Metadata for each station is fetched using [reverse geocoding](https://github.com/thampiman/reverse-geocoder). Key cleaning steps include: 
 
 * Retaining only data from 2018 January to 2024 December.
 * Removing non-U.S. stations.
