@@ -1,5 +1,25 @@
 # Predicting Flight Delays and Cancellations: An Integrated Analysis of Airport Data and Weather Data
 
+## Web-App
+
+The web-app link to interact with the spotify recommendation system can be found here: https://airport-weather-prediction.onrender.com
+
+*Note: This service is currently suspended.*
+
+Here are some videos to showcase the web-app.
+
+**Weather Data Exploration**
+
+https://github.com/user-attachments/assets/7e831903-e312-401d-aba9-07b00fa24b65
+
+**Airport Data Exploration**
+
+[Video coming soon]
+
+**Delay and Cancellation Prediction**
+
+[Video coming soon]
+
 ## Introduction
 
 The holiday season (November to January) is among the busiest for air travel. This project identifies vital flight delays and cancellations patterns, providing actionable insights to help travelers navigate potential disruptions. This report outlines the data preparation steps, including cleaning, merging, and imputation, as well as practical booking tips and predictive models for forecasting delays and cancellations.
