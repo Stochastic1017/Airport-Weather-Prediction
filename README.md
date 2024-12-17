@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/b566e9a1-032e-4976-b7cb-9813e7c3bb08
 
 **Delay and Cancellation Prediction**
 
-[Video coming soon]
+https://github.com/user-attachments/assets/2ea7fb16-7afd-4122-9443-b11481268e45
 
 ## Introduction
 
