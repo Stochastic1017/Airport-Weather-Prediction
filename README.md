@@ -10,7 +10,7 @@ Here are some videos to showcase the web-app.
 
 **Weather Data Exploration**
 
-https://github.com/user-attachments/assets/7e831903-e312-401d-aba9-07b00fa24b65
+https://github.com/user-attachments/assets/5ac76d71-cec0-4f39-84ec-0a4b524ca9ee
 
 **Airport Data Exploration**
 
