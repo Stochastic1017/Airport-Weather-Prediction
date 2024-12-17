@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/7e831903-e312-401d-aba9-07b00fa24b65
 
 **Airport Data Exploration**
 
-[Video coming soon]
+https://github.com/user-attachments/assets/b566e9a1-032e-4976-b7cb-9813e7c3bb08
 
 **Delay and Cancellation Prediction**
 
