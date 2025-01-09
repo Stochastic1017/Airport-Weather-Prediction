@@ -53,4 +53,12 @@ With a total 385 airports and 2,580 weather stations, this [script](https://gith
 
 ## Setting up Back-End
 
-In order to allow for data pull, a back-end was set up google cloud bucket. Furthermore, the dataset is also available publicly on kaggle for people to fit prediction models and conduct analysis. 
+In order to allow for data pull, a back-end was set up google cloud bucket. Furthermore, the dataset is also available publicly on kaggle for people to fit prediction models and conduct rigorous statistical analysis.
+
+Airport data: https://www.kaggle.com/datasets/shrivatssudhir/airline-data-bureau-of-transportation-statistics
+Weather data: https://www.kaggle.com/datasets/shrivatssudhir/ncei-local-climatology-data-v1
+Merged airport and weather data: https://www.kaggle.com/datasets/shrivatssudhir/airport-weather-prediction
+
+## Regression and Classification models
+
+To predict delay using regression, and cancellation using classification, we use Random Forests Regressor and Random Forest Classifier respectively. The code to fit these models can be found [here]().
