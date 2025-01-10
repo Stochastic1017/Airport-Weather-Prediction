@@ -61,4 +61,6 @@ Merged airport and weather data: https://www.kaggle.com/datasets/shrivatssudhir/
 
 ## Regression and Classification models
 
-To predict delay using regression, and cancellation using classification, we use Random Forests Regressor and Random Forest Classifier respectively. The code to fit these models can be found [here]().
+To predict delay using regression, and cancellation using classification, we use Random Forests Regressor and Random Forest Classifier respectively. The code to fit these models can be found [here](https://github.com/Stochastic1017/Airport-Weather-Prediction/blob/main/models/optimized-flight-prediction-v2.py). Both these models are pickled and deployed (in cache) when the web-app is launched.
+
+The RMSE for delay predictions (unbounded) is 156 minutes. The RMSE for delay predictions (bounded), i.e., we only report positive delays is 25 minutes. The cancellation classification has an accuracy of 98.04%.
