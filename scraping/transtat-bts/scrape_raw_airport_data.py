@@ -46,8 +46,7 @@ else:
 def setup_webdriver():
     """Sets up and returns a WebDriver instance using cached geckodriver."""
     try:                                                                                    
-        chrome_options = Options()
-        #chrome_options.add_argument("--headless")               # Run in headless mode                             
+        chrome_options = Options()                            
         chrome_options.add_argument("--disable-extensions")     # Disable extensions                               
         chrome_options.add_argument("--disable-gpu")            # Disable GPU                                      
         chrome_options.add_argument("--no-sandbox")             # No sandbox                                       
@@ -116,13 +115,15 @@ for year in dropdown_years.options:
         time.sleep(1)
 
 # Gives system a minute to finish all downloads
+print("Please wait 1 minute to ensure all files are downloaded.")
 time.sleep(60)
 
 driver.quit()
 
 print("Scraping completed successfully! Starting file cleanup...\n")
 
-downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads") # downloads directory where all zip files are downloaded
+# downloads directory where all zip files are downloaded
+downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
 
 zip_files = [
     f for f in os.listdir(downloads_dir)
